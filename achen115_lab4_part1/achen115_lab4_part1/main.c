@@ -1,9 +1,10 @@
-/*
+/* Alex Chen (achen115@ucr.edu)
+ * Nicholas Ray (nray001@ucr.edu)
  * achen115_lab4_part1.c
  *
- * Created: 4/10/2019 2:09:40 PM
+ * Created: 4/10/2019 2:32:11 PM
  * Author : ucrcse
- */ 
+ */
 
 #include <avr/io.h>
 
