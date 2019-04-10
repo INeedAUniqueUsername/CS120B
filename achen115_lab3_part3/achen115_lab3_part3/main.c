@@ -16,7 +16,7 @@ int main(void)
     while (1)
     {
 		char A = PINA;
-	    char fuel = fuel & 0x0F;
+	    char fuel = A & 0x0F;
 	    PORTC = (((A & 0x70) == 0x30) << 7) |		//A == X011 XXXX
 				((fuel < 5) << 6) |
 				((fuel > 0) << 5) |
