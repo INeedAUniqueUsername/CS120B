@@ -14,8 +14,8 @@ int main(void)
 {
     /* Replace with your application code */
 	DDRA = 0;	PINA = -1;
-	DDRC = -1;	PORTC = 0;
-	char C = 7;
+	DDRB = -1;	PORTB = 0;
+	char B = 7;
 	char state = 0;
     while (1) 
     {	
@@ -27,24 +27,24 @@ int main(void)
 				case 1:
 					//Make sure we're not getting here by releasing from state 3
 					if(state != 3) {
-						if(C < 9)
-							C++;
+						if(B < 9)
+							B++;
 					}
 					break;
 				case 2:
 					//Make sure we're not getting here by releasing from state 3
 					if(state != 3) {
-						if(C > 0)
-							C--;
+						if(B > 0)
+							B--;
 					}
 					break;
 				case 3:
-					C = 0;
+					B = 0;
 					break;
 			}
 			state = stateNext;
 		}
-		PORTC = C;
+		PORTB = B;
     }
 }
 

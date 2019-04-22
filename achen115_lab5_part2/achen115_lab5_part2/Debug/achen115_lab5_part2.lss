@@ -21,11 +21,11 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, READONLY, DEBUGGING
   8 .debug_frame  00000034  00000000  00000000  000014c4  2**2
                   CONTENTS, READONLY, DEBUGGING
-  9 .debug_str    000003ff  00000000  00000000  000014f8  2**0
+  9 .debug_str    000003fd  00000000  00000000  000014f8  2**0
                   CONTENTS, READONLY, DEBUGGING
- 10 .debug_loc    00000048  00000000  00000000  000018f7  2**0
+ 10 .debug_loc    00000048  00000000  00000000  000018f5  2**0
                   CONTENTS, READONLY, DEBUGGING
- 11 .debug_ranges 00000010  00000000  00000000  0000193f  2**0
+ 11 .debug_ranges 00000010  00000000  00000000  0000193d  2**0
                   CONTENTS, READONLY, DEBUGGING
 
 Disassembly of section .text:
@@ -139,17 +139,17 @@ int main(void)
   b6:	2f ef       	ldi	r18, 0xFF	; 255
   b8:	fc 01       	movw	r30, r24
   ba:	20 83       	st	Z, r18
-	DDRC = -1;	PORTC = 0;
-  bc:	87 e2       	ldi	r24, 0x27	; 39
+	DDRB = -1;	PORTB = 0;
+  bc:	84 e2       	ldi	r24, 0x24	; 36
   be:	90 e0       	ldi	r25, 0x00	; 0
   c0:	2f ef       	ldi	r18, 0xFF	; 255
   c2:	fc 01       	movw	r30, r24
   c4:	20 83       	st	Z, r18
-  c6:	88 e2       	ldi	r24, 0x28	; 40
+  c6:	85 e2       	ldi	r24, 0x25	; 37
   c8:	90 e0       	ldi	r25, 0x00	; 0
   ca:	fc 01       	movw	r30, r24
   cc:	10 82       	st	Z, r1
-	char C = 7;
+	char B = 7;
   ce:	87 e0       	ldi	r24, 0x07	; 7
   d0:	89 83       	std	Y+1, r24	; 0x01
 	char state = 0;
@@ -193,11 +193,11 @@ int main(void)
  108:	8a 81       	ldd	r24, Y+2	; 0x02
  10a:	83 30       	cpi	r24, 0x03	; 3
  10c:	a9 f0       	breq	.+42     	; 0x138 <main+0x9a>
-						if(C < 9)
+						if(B < 9)
  10e:	89 81       	ldd	r24, Y+1	; 0x01
  110:	89 30       	cpi	r24, 0x09	; 9
  112:	90 f4       	brcc	.+36     	; 0x138 <main+0x9a>
-							C++;
+							B++;
  114:	89 81       	ldd	r24, Y+1	; 0x01
  116:	8f 5f       	subi	r24, 0xFF	; 255
  118:	89 83       	std	Y+1, r24	; 0x01
@@ -210,11 +210,11 @@ int main(void)
  11c:	8a 81       	ldd	r24, Y+2	; 0x02
  11e:	83 30       	cpi	r24, 0x03	; 3
  120:	69 f0       	breq	.+26     	; 0x13c <main+0x9e>
-						if(C > 0)
+						if(B > 0)
  122:	89 81       	ldd	r24, Y+1	; 0x01
  124:	88 23       	and	r24, r24
  126:	51 f0       	breq	.+20     	; 0x13c <main+0x9e>
-							C--;
+							B--;
  128:	89 81       	ldd	r24, Y+1	; 0x01
  12a:	81 50       	subi	r24, 0x01	; 1
  12c:	89 83       	std	Y+1, r24	; 0x01
@@ -222,7 +222,7 @@ int main(void)
 					break;
  12e:	06 c0       	rjmp	.+12     	; 0x13c <main+0x9e>
 				case 3:
-					C = 0;
+					B = 0;
  130:	19 82       	std	Y+1, r1	; 0x01
 					break;
  132:	05 c0       	rjmp	.+10     	; 0x13e <main+0xa0>
@@ -236,29 +236,29 @@ int main(void)
  136:	03 c0       	rjmp	.+6      	; 0x13e <main+0xa0>
 					//Make sure we're not getting here by releasing from state 3
 					if(state != 3) {
-						if(C < 9)
-							C++;
+						if(B < 9)
+							B++;
 					}
 					break;
  138:	00 00       	nop
  13a:	01 c0       	rjmp	.+2      	; 0x13e <main+0xa0>
 					//Make sure we're not getting here by releasing from state 3
 					if(state != 3) {
-						if(C > 0)
-							C--;
+						if(B > 0)
+							B--;
 					}
 					break;
  13c:	00 00       	nop
 				case 3:
-					C = 0;
+					B = 0;
 					break;
 			}
 			state = stateNext;
  13e:	8b 81       	ldd	r24, Y+3	; 0x03
  140:	8a 83       	std	Y+2, r24	; 0x02
 		}
-		PORTC = C;
- 142:	88 e2       	ldi	r24, 0x28	; 40
+		PORTB = B;
+ 142:	85 e2       	ldi	r24, 0x25	; 37
  144:	90 e0       	ldi	r25, 0x00	; 0
  146:	29 81       	ldd	r18, Y+1	; 0x01
  148:	fc 01       	movw	r30, r24
