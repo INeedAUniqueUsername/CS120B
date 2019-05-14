@@ -149,7 +149,7 @@ void play() {
 			E4,
 			C4,
 			A4, A4, 0,
-
+			/*
 				D4, F4, A4, G4,
 				F4, E4, 0, C4,
 				E4, D4, C4, B3,
@@ -159,6 +159,7 @@ void play() {
 				E4,
 				C4,
 				A4, A4, 0,
+				*/
 
 		E4, C4, D4, B4, C4, A4,
 		Ab4, E4, F4, E4, 
@@ -222,7 +223,7 @@ void play() {
 		half, half, half, half
 
 	};
-	const short length = 122;
+	const short length = 102;//122;
 
 
 	static short time = 0;
