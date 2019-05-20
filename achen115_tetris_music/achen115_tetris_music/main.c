@@ -105,12 +105,94 @@ void PWM_off() {
 	TCCR0B = 0x00;
 }
 
-void play() {
-	const double G3 = 196.0, A3 = 220.0, B3 = 246.94, C4 = 261.63, Db4 = 277.18, D4 = 293.66, Eb4 = 311.13, E4 = 329.63, F4 = 349.23, Gb4 = 369.99, G4 = 392, Ab4 = 415.30, A4 = 440, Bb4 = 466.16, B4 = 494.88, C5 = 523.25, Db5 = 544.37, D5 = 587.33;
-	const short whole = 1000;
-	const short halfdot = whole * 3 / 4;
-	const short half = whole/2;
-	const short quarter = half/2;
+const short whole = 1000;
+const short halfdot = whole * 3 / 4;
+const short half = whole/2;
+const short quarter = half/2;
+
+const double
+			G3 = 196.0,
+			A3 = 220.0, 
+			Bb3 = 233.08,
+			B3 = 246.94, 
+			C4 = 261.63, 
+			Db4 = 277.18, 
+			D4 = 293.66, 
+			Eb4 = 311.13, 
+			E4 = 329.63, 
+			F4 = 349.23, 
+			Gb4 = 369.99, 
+			G4 = 392, 
+			Ab4 = 415.30, 
+			A4 = 440, 
+			Bb4 = 466.16, 
+			B4 = 494.88, 
+			C5 = 523.25, 
+			Db5 = 544.37, 
+			D5 = 587.33;
+
+static short time = 0;
+static short note = -1;
+void highScore() {
+	const double notes[] = {
+		Eb4, F4, G4,
+		Ab4, Bb4, Ab4, G4, 
+		G4, F4, G4, F4,
+
+		F4, Eb4, F4, Eb4,
+		Eb4, Db4, C4, Eb4,
+		Ab4, Bb4, Ab4, G4,
+
+		G4, F4, G4, F4,
+		F4, Eb4, F4, Eb4,
+		Eb4, Db4, C4, Bb3,
+
+		C4, Db4, C4, Bb3,
+		Bb3, A4, Bb3, C4,
+		Db4, Eb4, Db4, C4,
+
+		C4, Bb3, C4, Db4,
+		Eb4, D4, Eb4, E4,
+		G4, F4, Ab4, F4,
+
+		E4, Eb4, Db4, C4,
+		A4
+	};
+	const short times[] = {
+		half, half, half,
+		halfdot, quarter, halfdot, quarter,
+		halfdot, quarter, halfdot, quarter,
+		
+		halfdot, quarter, halfdot, quarter,
+		halfdot, quarter, halfdot, quarter,
+		halfdot, quarter, halfdot, quarter,
+
+		halfdot, quarter, halfdot, quarter,
+		halfdot, quarter, halfdot, quarter,
+		halfdot, quarter, halfdot, quarter,
+
+		halfdot, quarter, halfdot, quarter,
+		halfdot, quarter, halfdot, quarter,
+		halfdot, quarter, halfdot, quarter,
+
+		halfdot, quarter, halfdot, quarter,
+		halfdot, quarter, halfdot, quarter,
+		halfdot, quarter, halfdot, quarter,
+
+		halfdot, quarter, halfdot, quarter,
+		whole
+	};
+	const short length = 65;
+
+	if(--time > 0)
+		return;
+	if(++note >= length)
+		note = 0;
+
+	set_PWM(notes[note]);
+	time = times[note];	
+}
+void typeA() {
 	const double notes[] = {
 		E4, B3, C4,
 		D4, C4, B3,
@@ -205,7 +287,7 @@ void play() {
 			half,
 			half,
 			half, half, half,
-
+			/*
 				half, quarter, half, quarter,
 				quarter, half, quarter, quarter,
 				half, quarter, quarter, half,
@@ -215,7 +297,7 @@ void play() {
 				half,
 				half,
 				half, half, half,
-
+				*/
 		whole, whole, whole, whole, whole, whole,
 		half, half, half, half,
 
@@ -225,9 +307,6 @@ void play() {
 	};
 	const short length = 102;//122;
 
-
-	static short time = 0;
-	static short note = -1;
 	if(--time > 0)
 		return;
 	if(++note >= length)
@@ -245,7 +324,7 @@ int main(void)
 	TimerSet(1);
 	TimerOn();
 	while(1) {
-		play();
+		typeA();
 		while(!TimerFlag);
 		TimerFlag = 0;
 	}
