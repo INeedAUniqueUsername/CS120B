@@ -247,8 +247,8 @@ unsigned char KeypadTick() {
 	return 0;
 }
 unsigned char MarqueeTick() {
-	static char s[] = "CS120B is Legend... wait for it DARY!                       ";
-	static char length = 38;
+	static char s[] = "CS120B is Legend... wait for it DARY! CS120B is Legen";
+	static char length = 53;
 	static short index = 0;
 	for(char i = index; i < index + 15; i++) {
 		LCD_Cursor(i - index + 1);
@@ -298,14 +298,14 @@ int main() {
 	static task task1, task2, task3, task4;
 	task *tasks[] = { &task1, &task2, &task3, &task4 };
 	*/
-	static task keypad;
-	task *tasks[] = { &keypad };
+	static task marquee;
+	task *tasks[] = { &marquee };
 	const unsigned short numTasks = 1;
 
-	keypad.state = -1;//Task initial state.
-	keypad.period = 1;//Task Period.
-	keypad.elapsedTime = 1;//Task current elapsed time.
-	keypad.TickFct = &KeypadTick;//Function pointer for the tick.
+	marquee.state = -1;//Task initial state.
+	marquee.period = 5;//Task Period.
+	marquee.elapsedTime = 5;//Task current elapsed time.
+	marquee.TickFct = &MarqueeTick;//Function pointer for the tick.
 
 	LCD_init();
 	LCD_ClearScreen();

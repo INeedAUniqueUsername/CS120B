@@ -1,3 +1,9 @@
+/*
+ * achen115_lab11_part3.c
+ *
+ * Created: 5/15/2019 3:10:56 PM
+ * Author : Alex
+ */ 
 #include <avr/io.h>
 #include "bit.h"
 #include "io.c"
@@ -220,45 +226,52 @@ int SMTick4(int state) {
 }
 
 // --------END User defined FSMs-----------------------------------------------
-
 unsigned char KeypadTick() {
+	static unsigned char x_prev = '\0';
+	static unsigned char index_write = 0;
+	static unsigned char s[] = "Congratulations!";
+	static unsigned char changed = 1;
 	unsigned char x;
+	
 	x = GetKeypadKey();
-	switch (x) {
-		case '\0': PORTB = 0x1F; break; // All 5 LEDs on
-		case '1': PORTB = 0x01; break; // hex equivalent
-		case '2': PORTB = 0x02; break;
-		case '3': PORTB = 0x03; break;
-		case '4': PORTB = 0x04; break;
-		case '5': PORTB = 0x05; break;
-		case '6': PORTB = 0x06; break;
-		case '7': PORTB = 0x07; break;
-		case '8': PORTB = 0x08; break;
-		case '9': PORTB = 0x09; break;
-		case 'A': PORTB = 0x0A; break;
-		case 'B': PORTB = 0x0B; break;
-		case 'C': PORTB = 0x0C; break;
-		case 'D': PORTB = 0x0D; break;
-		case '*': PORTB = 0x0E; break;
-		case '0': PORTB = 0x00; break;
-		case '#': PORTB = 0x0F; break;
-		default: PORTB = 0x1B; break; // Should never occur. Middle LED off.
+	if(x == '\0') {
+		x_prev = x;
+	} else if(x != x_prev && x != '\0') {
+		x_prev = x;
+		s[index_write] = x;
+		index_write++;
+		if(index_write > 15) {
+			index_write = 0;
+		}
+		changed = 1;
 	}
-	return 0;
-}
-unsigned char MarqueeTick() {
-	static char s[] = "CS120B is Legend... wait for it DARY!                       ";
-	static char length = 38;
-	static short index = 0;
-	for(char i = index; i < index + 15; i++) {
-		LCD_Cursor(i - index + 1);
+	if(changed) {
+		for(short i = 0; i < 16; i++) {
+			LCD_Cursor(i+1);
+			LCD_WriteData(s[i]);
+		}
+		LCD_Cursor(index_write+1);
+		changed = 0;
+	}
+	/*
+	if(x != x_prev && x != '\0') {
+		if(index_write < 14) {
+			for(short i = 0; i < 14; i++) {
+				s[i] = s[i+1];
+			}
+		}
+		s[index_write] = x;
+		x_prev = x;
+		if(index_write < 14) {
+			index_write++;
+		}
+	}
+
+	for(short i = 0; i < 14; i++) {
+		LCD_Cursor(i+2);
 		LCD_WriteData(s[i]);
 	}
-	if(index < length - 16) {
-		index++;
-	} else {
-		index = 0;
-	}
+	*/
 	return 0;
 }
 
@@ -310,7 +323,7 @@ int main() {
 	LCD_init();
 	LCD_ClearScreen();
 
-	short GCD = 100;
+	short GCD = 250;
 	/*
 	// Task 1
 	task1.state = -1;//Task initial state.
@@ -360,3 +373,5 @@ int main() {
 	// Error: Program should not exit!
 	return 0;
 }
+
+

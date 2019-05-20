@@ -1,3 +1,9 @@
+/*
+ * achen115_lab11_part3.c
+ *
+ * Created: 5/15/2019 3:10:56 PM
+ * Author : Alex
+ */ 
 #include <avr/io.h>
 #include "bit.h"
 #include "io.c"
@@ -224,44 +230,29 @@ int SMTick4(int state) {
 unsigned char KeypadTick() {
 	unsigned char x;
 	x = GetKeypadKey();
-	switch (x) {
-		case '\0': PORTB = 0x1F; break; // All 5 LEDs on
-		case '1': PORTB = 0x01; break; // hex equivalent
-		case '2': PORTB = 0x02; break;
-		case '3': PORTB = 0x03; break;
-		case '4': PORTB = 0x04; break;
-		case '5': PORTB = 0x05; break;
-		case '6': PORTB = 0x06; break;
-		case '7': PORTB = 0x07; break;
-		case '8': PORTB = 0x08; break;
-		case '9': PORTB = 0x09; break;
-		case 'A': PORTB = 0x0A; break;
-		case 'B': PORTB = 0x0B; break;
-		case 'C': PORTB = 0x0C; break;
-		case 'D': PORTB = 0x0D; break;
-		case '*': PORTB = 0x0E; break;
-		case '0': PORTB = 0x00; break;
-		case '#': PORTB = 0x0F; break;
-		default: PORTB = 0x1B; break; // Should never occur. Middle LED off.
-	}
+	LCD_Cursor(2);
+	if(x != '\0')
+		LCD_WriteData(x);
+	else
+		LCD_WriteData(' ');
 	return 0;
 }
-unsigned char MarqueeTick() {
-	static char s[] = "CS120B is Legend... wait for it DARY!                       ";
-	static char length = 38;
-	static short index = 0;
-	for(char i = index; i < index + 15; i++) {
-		LCD_Cursor(i - index + 1);
-		LCD_WriteData(s[i]);
-	}
-	if(index < length - 16) {
-		index++;
-	} else {
-		index = 0;
-	}
-	return 0;
-}
+/*
+unsigned char KeypadTick() {
+	static unsigned char x_prev = '\0';
+	static unsigned char index = 0;
+	unsigned char x;
+	x = GetKeypadKey();
 
+	if(x != x_prev && x != '\0') {
+		index++;
+		LCD_Cursor(index);
+		LCD_WriteData(x);
+		x_prev = x;
+	}
+	return 0;
+}
+*/
 // Implement scheduler code from PES.
 int main() {
 	// Set Data Direction Registers
@@ -310,7 +301,7 @@ int main() {
 	LCD_init();
 	LCD_ClearScreen();
 
-	short GCD = 100;
+	short GCD = 250;
 	/*
 	// Task 1
 	task1.state = -1;//Task initial state.
@@ -360,3 +351,5 @@ int main() {
 	// Error: Program should not exit!
 	return 0;
 }
+
+
