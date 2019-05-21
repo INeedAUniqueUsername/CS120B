@@ -52,10 +52,26 @@ Point add(Point *p1, Point *p2) {
 //   ...      .+.      ...      ...
 //   ..+      ...      +..      ...
 //   ...      ...      ...      .+.
-void pivot(Point* p) {
+void pivotCCW(Point* p) {
 	signed short x = p->x;
 	p->x = -p->y;
 	p->y = x;
+}
+
+// Rotates a point 90 degrees CW around the origin
+// We store the Tetromino tiles as relative positions
+// So we can use a neat math trick to do this
+// ty = y
+// y = -x
+// x = ty
+// ( 1, 0)  ( 0,-1)  (-1, 0)  ( 0, 1)
+//   ...      ...      ...      .+.
+//   ..+      ...      +..      ...
+//   ...      .+.      ...      ...
+void pivotCW(Point* p) {
+	signed short y = p->y;
+	p->y = -p->x;
+	p->x = y;
 }
 
 //A tetromino, a set of four adjacent points around a position
@@ -86,20 +102,9 @@ typedef struct Tetra {
 //  .++  ...  .+.  ...
 // Points are copied on assignment
 Tetra L(Point pos) { return (Tetra) {.pos = pos, .tiles = {n, c, s, se}}; }
-Tetra Z(Point pos) { return (Tetra) {.pos = pos, .tiles = {w, c, e, ne}}; }
+Tetra Z(Point pos) { return (Tetra) {.pos = pos, .tiles = {w, c, n, ne}}; }
 Tetra I(Point pos) { return (Tetra) {.pos = pos, .tiles = {s, c, n, nn}}; }
 Tetra O(Point pos) { return (Tetra) {.pos = pos, .tiles = {s, c, e, se}}; }
-//Creates a random tetromino
-Tetra CreateTetra() {
-	Point pos = {.x = WIDTH/2, .y = HEIGHT + 2};
-	switch(rand()%4) {
-	case 0: return L(pos);
-	case 1: return Z(pos);
-	case 2: return I(pos);
-	default:
-	case 3: return O(pos);
-	}
-}
 //Returns a copy of an absolute point on the tetromino
 Point getTile(Tetra *t, unsigned short index) {
 	return add(&t->pos, &t->tiles[index]);
@@ -116,17 +121,51 @@ void right(Tetra *t) {
 void left(Tetra *t) {
 	t->pos.x--;
 }
-//Flips the tetromino tiles without bounds checking
+//Flips the tetromino tiles across X without bounds checking
 void mirror(Tetra* t) {
 	for(unsigned short i = 0; i < 4; i++) {
-		t->tiles->x = -t->tiles->x;
+		t->tiles[i].x = -t->tiles[i].x;
 	}
 }
 //Rotates the tetromino tiles around the center without bounds checking
-void turn(Tetra *t) {
+void turnCCW(Tetra *t) {
 	FOR_TETRA {
-		pivot(&t->tiles[i]);
+		pivotCCW(&t->tiles[i]);
 	}
+}
+//Rotates the tetromino tiles around the center without bounds checking
+void turnCW(Tetra *t) {
+	FOR_TETRA {
+		pivotCW(&t->tiles[i]);
+	}
+}
+//Creates a random tetromino
+Tetra CreateTetra() {
+	char x = WIDTH/2 + rand()%8 - 4;
+	Point pos = {.x = x, .y = HEIGHT + 2};
+	Tetra t;
+	switch(rand()%4) {
+		case 0: t = L(pos); break;
+		case 1: t = Z(pos); break;
+		case 2: t = I(pos); break;
+		default:
+		case 3: t = O(pos); break;
+	}
+	switch(rand()%3) {
+		case 0:
+		turnCCW(&t);
+		break;
+		case 1:
+		turnCW(&t);
+		break;
+		case 2:
+		default:
+		break;
+	}
+	if(rand()%2) {
+		mirror(&t);
+	}
+	return t;
 }
 //A wrapper for a 2D array of fixed width and height
 typedef struct Grid {
@@ -171,16 +210,6 @@ char rowFull(Grid *g, short y) {
 char inBoundsPoint(Grid *g, Point *p) {
 	return p->x > -1 && p->x < WIDTH && p->y > -1 && p->y < HEIGHT;
 }
-//Returns whether the tetromino and all of its tiles are in bounds of the grid
-char inBounds(Grid *g, Tetra *t) {
-	FOR_TETRA {
-		Point p = getTile(t, i);
-		if(!inBoundsPoint(g, &p) || getPoint(g, &p)) {
-			return 0;
-		}
-	}
-	return 1;
-}
 //Returns whether the tetromino and all of its tiles are in bounds of the grid AND the grid is empty for all the points
 char inBoundsOpen(Grid *g, Tetra *t) {
 	FOR_TETRA {
@@ -209,23 +238,56 @@ char land(Grid *g, Tetra *t) {
 	}
 	return 0;
 }
-//Checks whether the Tetra can turn without leaving bounds
-char canTurn(Grid *g, Tetra *t) {
-	Tetra turned = *t;
-	turn(&turned);
-	return inBounds(g, &turned);
+//Mirrors the tetromino, reverting the operation if it goes out of bounds
+void tryMirror(Grid *g, Tetra *t) {
+	//Try it
+	mirror(t);
+	//If it works, we're done
+	if(inBoundsOpen(g, t)) {
+		return;
+	}
+	//Otherwise, revert
+	mirror(t);
 }
-//Checks whether the Tetra can shift right without leaving bounds
-char canShiftRight(Grid *g, Tetra *t) {
-	Tetra shifted = *t;
-	right(&shifted);
-	return inBounds(g, &shifted);
+//Turns the Tetromino 90 degrees CCW, reverting the operation if it goes out of bounds
+void tryTurnCCW(Grid *g, Tetra *t) {
+	//Try it
+	turnCCW(t);
+	//If it works, we're done
+	if(inBoundsOpen(g, t)) {
+		return;
+	}
+	//Otherwise, revert
+	turnCW(t);
 }
-//Checks whether the Tetra can shift left without leaving bounds
-char canShiftLeft(Grid *g, Tetra *t) {
-	Tetra shifted = *t;
-	left(&shifted);
-	return inBounds(g, &shifted);
+//Turns the Tetromino 90 degrees CW, reverting the operation if it goes out of bounds
+void tryTurnCW(Grid *g, Tetra *t) {
+	//Try it
+	turnCW(t);
+	//If it works, we're done
+	if(inBoundsOpen(g, t)) {
+		return;
+	}
+	//Otherwise, revert
+	turnCCW(t);
+}
+//Shifts the Tetromino right, reverting the operation if it goes out of bounds
+void tryShiftRight(Grid *g, Tetra *t) {
+	right(t); //Try it
+	//See if it worked
+	if(inBoundsOpen(g, t)) {
+		return;
+	}
+	left(t);	//Otherwise go back
+}
+//Shifts the Tetromino right, reverting the operation if it goes out of bounds
+void tryShiftLeft(Grid *g, Tetra *t) {
+	left(t); //Try it
+	//See if it worked
+	if(inBoundsOpen(g, t)) {
+		return;
+	}
+	right(t);	//Otherwise go back
 }
 //Sets the Tetromino's tiles in the grid to solid
 void place(Grid *g, Tetra *t) {
@@ -268,7 +330,14 @@ void setScreenState(ScreenState next) {
 	}
 
 };
-
+//Draws a world tile as a 4x4 block on a vertical screen
+void drawTile(short x, short y, short fill) {
+	for(short xi = 0; xi < 4; xi++) {
+		for(short yi = 0; yi < 4; yi++) {
+			nokia_lcd_set_pixel(y*4 + yi, x*4 + xi, fill);
+		}
+	}
+}
 void UpdateGame() {
 	const short standardInterval = 10;
 	static Grid g;
@@ -282,7 +351,7 @@ void UpdateGame() {
 
 	static short time = 0;
 
-	static char pressed_prev = 0;
+	//static char pressed_prev = 0;
 
 	if(--time > 0) {
 		return;
@@ -294,37 +363,40 @@ void UpdateGame() {
 		time = standardInterval;
 		state = Play;
 		break;
-	case Play:
-		remove(&g, &t);			//Remove so that we can move
+	case Play: {
+		//remove(&g, &t);			//Remove so that we can move
 
 		char pressed = ~PIN_BUTTONS;
 		//char justPressed = pressed & ~pressed_prev;
 		switch(pressed) {
-		case 1:
-			if(canShiftRight(&g, &t)) {
-				right(&t);
-			}
+		case 1:	//Right
+			tryShiftRight(&g, &t);
 			break;
-		case 2:
-			if(canTurn(&g, &t)) {
-				turn(&t);
-			}
+		case 2:	//Middle
+			tryMirror(&g, &t);
 			break;
-		case 4:
-			if(canShiftLeft(&g, &t)) {
-				left(&t);
-			}
+		case 3:	//Middle + Right
+			tryTurnCW(&g, &t);
 			break;
-		case 5:
+		case 4:	//Left
+			tryShiftLeft(&g, &t);
+			break;
+		case 5:	//Left + Right
 			while(!land(&g, &t)) {
 				down(&t);
 			}
 			break;
+		case 6:	//Left + Middle
+			tryTurnCCW(&g, &t);
+			break;
+		case 7:	//Left + Middle + Right
+			break;
 		}
-		pressed_prev = pressed;
+		//pressed_prev = pressed;
 		if(land(&g, &t)) {		//See if we stop falling here
-			if(inBounds(&g, &t)) {	//We landed in the screen
+			if(inBoundsOpen(&g, &t)) {	//We landed in the screen
 				place(&g, &t);	//Place in grid
+				state = PlayInterval;
 				//Check for rows to clear
 				for(unsigned short y = 0; y < HEIGHT; y++) {
 					if(rowFull(&g, y)) {
@@ -340,7 +412,6 @@ void UpdateGame() {
 				t = CreateTetra();
 				if(state != RowClear) {
 					time = standardInterval * 5;
-					state = PlayInterval;
 				} else {
 					time = standardInterval;
 				}
@@ -353,21 +424,21 @@ void UpdateGame() {
 			}
 		} else {
 			down(&t);
-			place(&g, &t);		//Place in grid so it shows up
+			//place(&g, &t);
 			fall++;
 			time = standardInterval;
 			state = PlayInterval;
 		}
 		break;
-	case PlayInterval:
+	} case PlayInterval:
 		time = standardInterval;
 		state = Play;
 		break;
 	case RowClear:
 		if(--rowState%2 == 1) {
-			fillRow(&g, rowCleared);
-		} else {
 			clearRow(&g, rowCleared);
+		} else {
+			fillRow(&g, rowCleared);
 		}
 		if(rowState > 0) {
 			time = standardInterval;
@@ -391,7 +462,6 @@ void UpdateGame() {
 		}
 		break;
 	case GameOver:
-		
 		if(rowCleared < HEIGHT) {
 			clearRow(&g, 0);
 			descendRow(&g, 0);
@@ -407,34 +477,57 @@ void UpdateGame() {
 		state = GameOver;
 		break;
 	}
-
+	nokia_lcd_clear();
 	if(state == GameOverFlash) {
 		//Black screen
-		nokia_lcd_clear();
 		for(short x = 0; x < WIDTH; x++) {
 			for(short y = 0; y < HEIGHT; y++) {
-				for(short xi = 0; xi < 4; xi++) {
-					for(short yi = 0; yi < 4; yi++) {
-						nokia_lcd_set_pixel(y*4 + yi, x*4 + xi, 1);
-					}
-				}
+				drawTile(x, y, 1);
 			}
 		}
-		nokia_lcd_render();
+	} else if(state == Play) {
+		for(short x = 0; x < WIDTH; x++) {
+			for(short y = 0; y < HEIGHT; y++) {
+				drawTile(x, y, g.tiles[x][y]);
+			}
+		}
+		for(short i = 0; i < 4; i++) {
+			Point p = getTile(&t, i);
+			if(p.y < HEIGHT) {
+				drawTile(p.x, p.y, 1);
+			}
+		}
+		Tetra landed = t;
+		while(!land(&g, &landed)) {
+			down(&landed);
+		}
+		for(short i = 0; i < 4; i++) {
+			Point p = getTile(&landed, i);
+			if(p.y < HEIGHT) {
+				drawTile(p.x, p.y, 1);
+			}
+		}
+	} else if(state == PlayInterval) {
+		for(short x = 0; x < WIDTH; x++) {
+			for(short y = 0; y < HEIGHT; y++) {
+				drawTile(x, y, g.tiles[x][y]);
+			}
+		}
+		for(short i = 0; i < 4; i++) {
+			Point p = getTile(&t, i);
+			if(p.y < HEIGHT) {
+				drawTile(p.x, p.y, 1);
+			}
+		}
 	} else {
-		nokia_lcd_clear();
+		//Otherwise just draw the grid
 		for(short x = 0; x < WIDTH; x++) {
 			for(short y = 0; y < HEIGHT; y++) {
-				for(short xi = 0; xi < 4; xi++) {
-					for(short yi = 0; yi < 4; yi++) {
-						nokia_lcd_set_pixel(y*4 + yi, x*4 + xi, g.tiles[x][y]);
-					}
-				}
-				
+				drawTile(x, y, g.tiles[x][y]);
 			}
 		}
-		nokia_lcd_render();
 	}
+	nokia_lcd_render();
 }
 
 int main(void)
@@ -486,6 +579,6 @@ int main(void)
 		TimerFlag = 0;
 	}
 
-	return;
+	return 0;
 }
 
