@@ -333,12 +333,7 @@ void setScreenState(ScreenState next) {
 			highScore = load(a);
 			break;
 		case Game:
-			//Initialize the game
-			gameState = Init;
-			//Reset the RNG
-			srand(rnd);
-			//Reset the score
-			score = 0;
+			InitGame();
 			break;
 		case FinalScore:
 			if(score > highScore) {
@@ -432,26 +427,24 @@ void UpdateTitle() {
 void UpdateFinalScore() {
 	
 	nokia_lcd_clear();
-	nokia_lcd_write_string("Game Over! ", 1);
-	nokia_lcd_set_cursor(0, 10);
 	nokia_lcd_write_string("Your score: ", 1);
-	nokia_lcd_set_cursor(0, 20);
+	nokia_lcd_set_cursor(0, 10);
 
 	unsigned short scoreLength = getLength(score);
 	char scoreString[scoreLength];
 	getString(score, scoreString, scoreLength);
 	nokia_lcd_write_string(scoreString, 1);
 
-	nokia_lcd_set_cursor(0, 30);
+	nokia_lcd_set_cursor(0, 20);
 	nokia_lcd_write_string("High score: ", 1);
-	nokia_lcd_set_cursor(0, 40);
+	nokia_lcd_set_cursor(0, 30);
 	
 	unsigned short highScoreLength = getLength(highScore);
 	char highScoreString[highScoreLength];
 	getString(highScore, highScoreString, highScoreLength);
 	nokia_lcd_write_string(highScoreString, 1);
 
-	nokia_lcd_set_cursor(0, 50);
+	nokia_lcd_set_cursor(0, 40);
 	if(score > highScore) {
 		nokia_lcd_write_string("New high score!", 1);	
 	}
@@ -478,6 +471,16 @@ void drawTile(short x, short y, short fill) {
 		}
 	}
 }
+void InitGame() {
+	//Initialize the game
+	gameState = Init;
+	//Reset the RNG
+	srand(rnd);
+	//Reset the score
+	score = 0;
+
+	//To do: Reset all static variables
+}
 void UpdateGame() {
 	const short standardInterval = 10;
 	static Grid g;
@@ -490,8 +493,6 @@ void UpdateGame() {
 	static short fall = 0;
 
 	static short time = 0;
-
-	//static char pressed_prev = 0;
 
 	if(--time > 0) {
 		return;
@@ -507,6 +508,8 @@ void UpdateGame() {
 		//remove(&g, &t);			//Remove so that we can move
 
 		char pressed = ~PIN_BUTTONS;
+		static char pressed_prev = 0;
+		static char hard_drop = 0;
 		//char justPressed = pressed & ~pressed_prev;
 		switch(pressed) {
 		case 1:	//Right
@@ -532,7 +535,14 @@ void UpdateGame() {
 		case 7:	//Left + Middle + Right
 			break;
 		}
-		//pressed_prev = pressed;
+		pressed_prev = pressed;
+		if(pressed_prev == pressed && pressed == 5) {
+			hard_drop++;
+		} else {
+			hard_drop = 0;
+		}
+
+
 		if(land(&g, &t)) {		//See if we stop falling here
 			if(inBoundsOpen(&g, &t)) {	//We landed in the screen
 				place(&g, &t);	//Place in grid
@@ -551,7 +561,12 @@ void UpdateGame() {
 				fall = 0;
 				t = CreateTetra();
 				if(gameState != RowClear) {
-					time = standardInterval * 5;
+					if(hard_drop > 4) {
+						time = standardInterval / 2;
+					} else {
+						time = standardInterval * 5;
+					}
+					
 				} else {
 					time = standardInterval;
 				}
