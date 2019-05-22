@@ -329,7 +329,36 @@ void setScreenState(ScreenState next) {
 			break;
 	}
 
-};
+}
+void UpdateTitle() {
+	nokia_lcd_clear();
+	nokia_lcd_write_string("Tetris!", 1);
+	nokia_lcd_set_cursor(0, 10);
+	nokia_lcd_write_string("High score: ", 1);
+	nokia_lcd_set_cursor(0, 20);
+	if(score > 0) {
+		unsigned char scoreLeft = score;
+		unsigned char length = 0;
+		while(scoreLeft > 0) {
+			length++;
+			scoreLeft /= 10;
+		}
+		scoreLeft = score;
+
+		char scoreString[length+1];
+		scoreString[length] = 0;
+		while(scoreLeft > 0) {
+			length--;
+			scoreString[length] = '0' + (scoreLeft%10);
+			scoreLeft /= 10;
+		}
+		nokia_lcd_write_string(scoreString, 1);
+	} else {
+		char scoreString[] = "0";
+		nokia_lcd_write_string(scoreString, 1);
+	}
+	nokia_lcd_render();
+}
 //Draws a world tile as a 4x4 block on a vertical screen
 void drawTile(short x, short y, short fill) {
 	for(short xi = 0; xi < 4; xi++) {
@@ -574,7 +603,8 @@ int main(void)
 		TimerSet(10);
 		TimerOn();
 	while(1) {
-		UpdateGame();
+		//UpdateGame();
+		UpdateTitle();
 		while(!TimerFlag);
 		TimerFlag = 0;
 	}
