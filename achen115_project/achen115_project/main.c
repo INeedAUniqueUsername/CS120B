@@ -330,6 +330,25 @@ void setScreenState(ScreenState next) {
 	}
 
 }
+
+short getLength(short sh) {
+	unsigned char length = 1;
+	while(sh > 0) {
+		length++;
+		sh /= 10;
+	}
+	return length;
+}
+void getString(short sh, char* str, short length) {
+	length--;
+	str[length] = 0;
+	while(sh > 0) {
+		length--;
+		str[length] = '0' + (sh%10);
+		sh /= 10;
+	}
+	return;
+}
 void UpdateTitle() {
 	nokia_lcd_clear();
 	nokia_lcd_write_string("Tetris!", 1);
@@ -337,21 +356,10 @@ void UpdateTitle() {
 	nokia_lcd_write_string("High score: ", 1);
 	nokia_lcd_set_cursor(0, 20);
 	if(score > 0) {
-		unsigned char scoreLeft = score;
-		unsigned char length = 0;
-		while(scoreLeft > 0) {
-			length++;
-			scoreLeft /= 10;
-		}
-		scoreLeft = score;
+		unsigned short length = getLength(score);
 
-		char scoreString[length+1];
-		scoreString[length] = 0;
-		while(scoreLeft > 0) {
-			length--;
-			scoreString[length] = '0' + (scoreLeft%10);
-			scoreLeft /= 10;
-		}
+		char scoreString[length];
+		getString(score, scoreString, length);
 		nokia_lcd_write_string(scoreString, 1);
 	} else {
 		char scoreString[] = "0";
