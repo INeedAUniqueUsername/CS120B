@@ -206,6 +206,15 @@ char rowFull(Grid *g, short y) {
 	}
 	return 1;
 }
+//Returns whether the row is completely filled, no bounds checking
+char rowEmpty(Grid *g, short y) {
+	for(short x = 0; x < WIDTH; x++) {
+		if(!g->tiles[x][y]) {
+			return 0;
+		}
+	}
+	return 1;
+}
 //Returns whether the point is in bounds of the grid
 char inBoundsPoint(Grid *g, Point *p) {
 	return p->x > -1 && p->x < WIDTH && p->y > -1 && p->y < HEIGHT;
@@ -308,64 +317,158 @@ void remove(Grid *g, Tetra *t) {
 		}
 	}
 }
-unsigned char score;
 typedef enum ScreenState { Title, Game, FinalScore } ScreenState;
-typedef enum GameState { Init, Play, PlayInterval, RowClear, GameOver, GameOverFlash } GameState;
 ScreenState screenState;
+typedef enum GameState { Init, Play, PlayInterval, RowClear, GameOver, GameOverFlash } GameState;
+GameState gameState;
+unsigned char score = 0;
+unsigned char highScore = 0;
+unsigned char rnd = 0;
 void setScreenState(ScreenState next) {
 	screenState = next;
 	unsigned int a = 0;
 	switch(next) {
 		case Title:
-			score = load(a);
+			//Load the high score
+			highScore = load(a);
 			break;
 		case Game:
-			screenState = Init;
+			//Initialize the game
+			gameState = Init;
+			//Reset the RNG
+			srand(rnd);
+			//Reset the score
+			score = 0;
 			break;
 		case FinalScore:
-			if(score > load(a)) {
+			if(score > highScore) {
 				store(0, score);
 			}
 			break;
 	}
-
 }
 
 short getLength(short sh) {
 	unsigned char length = 1;
-	while(sh > 0) {
+	//Count the number in case it is 0
+	if(sh == 0) {
 		length++;
-		sh /= 10;
+	} else {
+		while(sh > 0) {
+			length++;
+			sh /= 10;
+		}
 	}
 	return length;
 }
 void getString(short sh, char* str, short length) {
 	length--;
 	str[length] = 0;
-	while(sh > 0) {
+	//Print the number in case it is 0
+	if(sh == 0) {
 		length--;
-		str[length] = '0' + (sh%10);
-		sh /= 10;
+		str[length] = '0';
+	} else {
+		while(sh > 0) {
+			length--;
+			str[length] = '0' + (sh%10);
+			sh /= 10;
+		}
 	}
 	return;
 }
 void UpdateTitle() {
+	
 	nokia_lcd_clear();
 	nokia_lcd_write_string("Tetris!", 1);
 	nokia_lcd_set_cursor(0, 10);
 	nokia_lcd_write_string("High score: ", 1);
 	nokia_lcd_set_cursor(0, 20);
-	if(score > 0) {
-		unsigned short length = getLength(score);
+	
+	unsigned short highScoreLength = getLength(highScore);
+	char highScoreString[highScoreLength];
+	getString(highScore, highScoreString, highScoreLength);
+	nokia_lcd_write_string(highScoreString, 1);
 
-		char scoreString[length];
-		getString(score, scoreString, length);
-		nokia_lcd_write_string(scoreString, 1);
-	} else {
-		char scoreString[] = "0";
-		nokia_lcd_write_string(scoreString, 1);
-	}
+	nokia_lcd_set_cursor(0, 30);
+	nokia_lcd_write_string("Random seed:", 1);
+
+	unsigned short rndLength = getLength(rnd);
+	char rndString[rndLength];
+	getString(rnd, rndString, rndLength);
+
+	nokia_lcd_set_cursor(0, 40);
+	nokia_lcd_write_string(rndString, 1);
+
 	nokia_lcd_render();
+
+
+	char pressed = ~PIN_BUTTONS;
+	static char pressed_prev = 0;
+	char justPressed = pressed & ~pressed_prev;
+	switch(justPressed) {
+		case 1:	//Right
+			rnd++;
+			break;
+		case 2:	//Middle
+			setScreenState(Game);
+			break;
+		case 3:	//Middle + Right
+			break;
+		case 4:	//Left
+			rnd--;
+			break;
+		case 5:	//Left + Right
+			
+			break;
+		case 6:	//Left + Middle
+			
+			break;
+		case 7:	//Left + Middle + Right
+			break;
+	}
+	pressed_prev = pressed;
+}
+void UpdateFinalScore() {
+	
+	nokia_lcd_clear();
+	nokia_lcd_write_string("Game Over! ", 1);
+	nokia_lcd_set_cursor(0, 10);
+	nokia_lcd_write_string("Your score: ", 1);
+	nokia_lcd_set_cursor(0, 20);
+
+	unsigned short scoreLength = getLength(score);
+	char scoreString[scoreLength];
+	getString(score, scoreString, scoreLength);
+	nokia_lcd_write_string(scoreString, 1);
+
+	nokia_lcd_set_cursor(0, 30);
+	nokia_lcd_write_string("High score: ", 1);
+	nokia_lcd_set_cursor(0, 40);
+	
+	unsigned short highScoreLength = getLength(highScore);
+	char highScoreString[highScoreLength];
+	getString(highScore, highScoreString, highScoreLength);
+	nokia_lcd_write_string(highScoreString, 1);
+
+	nokia_lcd_set_cursor(0, 50);
+	if(score > highScore) {
+		nokia_lcd_write_string("New high score!", 1);	
+	}
+
+	nokia_lcd_render();
+
+
+	char pressed = ~PIN_BUTTONS;
+	static char pressed_prev = 0;
+	char justPressed = pressed & ~pressed_prev;
+	switch(justPressed) {
+		case 0: break;
+		default:
+			setScreenState(Title);
+			break;
+	}
+	pressed_prev = pressed;
 }
 //Draws a world tile as a 4x4 block on a vertical screen
 void drawTile(short x, short y, short fill) {
@@ -379,7 +482,7 @@ void UpdateGame() {
 	const short standardInterval = 10;
 	static Grid g;
 	static Tetra t;
-	static GameState state = Init;
+	static GameState gameState = Init;
 
 	static short rowCleared = 0;
 	static char rowState = 1;
@@ -393,12 +496,12 @@ void UpdateGame() {
 	if(--time > 0) {
 		return;
 	}
-	switch(state) {
+	switch(gameState) {
 	case Init:
 		t = CreateTetra();
 		score = 0;
 		time = standardInterval;
-		state = Play;
+		gameState = Play;
 		break;
 	case Play: {
 		//remove(&g, &t);			//Remove so that we can move
@@ -433,13 +536,13 @@ void UpdateGame() {
 		if(land(&g, &t)) {		//See if we stop falling here
 			if(inBoundsOpen(&g, &t)) {	//We landed in the screen
 				place(&g, &t);	//Place in grid
-				state = PlayInterval;
+				gameState = PlayInterval;
 				//Check for rows to clear
 				for(unsigned short y = 0; y < HEIGHT; y++) {
 					if(rowFull(&g, y)) {
 						rowCleared = y;
 						rowState = 6;
-						state = RowClear;
+						gameState = RowClear;
 						score += 1 + y;
 						break;
 					}
@@ -447,7 +550,7 @@ void UpdateGame() {
 				placed++;
 				fall = 0;
 				t = CreateTetra();
-				if(state != RowClear) {
+				if(gameState != RowClear) {
 					time = standardInterval * 5;
 				} else {
 					time = standardInterval;
@@ -455,7 +558,7 @@ void UpdateGame() {
 			} else {
 				//We landed above the top of the screen
 				//Game over
-				state = GameOver;
+				gameState = GameOver;
 				rowCleared = 0;
 				time = standardInterval;
 			}
@@ -464,12 +567,12 @@ void UpdateGame() {
 			//place(&g, &t);
 			fall++;
 			time = standardInterval;
-			state = PlayInterval;
+			gameState = PlayInterval;
 		}
 		break;
 	} case PlayInterval:
 		time = standardInterval;
-		state = Play;
+		gameState = Play;
 		break;
 	case RowClear:
 		if(--rowState%2 == 1) {
@@ -482,16 +585,16 @@ void UpdateGame() {
 		} else {
 			descendRow(&g, rowCleared);
 
-			state = Play;
+			gameState = Play;
 			for(unsigned short y = 0; y < HEIGHT; y++) {
 				if(rowFull(&g, y)) {
 					rowCleared = y;
 					rowState = 6;
-					state = RowClear;
+					gameState = RowClear;
 					break;
 				}
 			}
-			if(state != RowClear) {
+			if(gameState != RowClear) {
 				time = standardInterval * 3;
 			} else {
 				time = standardInterval;
@@ -499,30 +602,30 @@ void UpdateGame() {
 		}
 		break;
 	case GameOver:
-		if(rowCleared < HEIGHT) {
+		if(rowCleared < HEIGHT && !rowEmpty(&g, rowCleared)) {
 			clearRow(&g, 0);
 			descendRow(&g, 0);
 			rowCleared++;
 			time = standardInterval;
-			state = GameOverFlash;
+			gameState = GameOverFlash;
 		} else {
 			setScreenState(FinalScore);
 		}
 		break;
 	case GameOverFlash:
 		time = standardInterval;
-		state = GameOver;
+		gameState = GameOver;
 		break;
 	}
 	nokia_lcd_clear();
-	if(state == GameOverFlash) {
+	if(gameState == GameOverFlash) {
 		//Black screen
 		for(short x = 0; x < WIDTH; x++) {
 			for(short y = 0; y < HEIGHT; y++) {
 				drawTile(x, y, 1);
 			}
 		}
-	} else if(state == Play) {
+	} else if(gameState == Play) {
 		for(short x = 0; x < WIDTH; x++) {
 			for(short y = 0; y < HEIGHT; y++) {
 				drawTile(x, y, g.tiles[x][y]);
@@ -544,7 +647,7 @@ void UpdateGame() {
 				drawTile(p.x, p.y, 1);
 			}
 		}
-	} else if(state == PlayInterval) {
+	} else if(gameState == PlayInterval) {
 		for(short x = 0; x < WIDTH; x++) {
 			for(short y = 0; y < HEIGHT; y++) {
 				drawTile(x, y, g.tiles[x][y]);
@@ -566,7 +669,13 @@ void UpdateGame() {
 	}
 	nokia_lcd_render();
 }
-
+void UpdateState() {
+	switch(screenState) {
+	case Title: UpdateTitle(); break;
+	case Game: UpdateGame(); break;
+	case FinalScore: UpdateFinalScore(); break;
+	}
+}
 int main(void)
 {
 	/*
@@ -611,8 +720,7 @@ int main(void)
 		TimerSet(10);
 		TimerOn();
 	while(1) {
-		//UpdateGame();
-		UpdateTitle();
+		UpdateState();
 		while(!TimerFlag);
 		TimerFlag = 0;
 	}
