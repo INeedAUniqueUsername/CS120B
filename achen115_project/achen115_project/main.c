@@ -21,13 +21,16 @@ void store(unsigned char address, unsigned char data)
 	EEAR = address;	//Set address
 	EEDR = data;	//Set data
 	EECR &= 0x0F;	//Write mode
-	EECR |= 4;		//Master write enable
+	EECR &= ~2;		//Off Write enable
+	EECR |= 4;		//On Master write enable
 	EECR |= 2;		//Write enable
+	while(EECR & 4);//Wait for write
 }
 unsigned char load(unsigned int address) {
-	while(EECR & 4);//Wait for write
+	while((EECR & 4) || (EECR & 2));//Wait for write
 	EEAR = address;	//Set address
 	EECR |= 1;		//Read enable
+	while(EECR & 1);
 	return EEDR;	//Done
 }
 typedef struct Point {
@@ -182,6 +185,13 @@ void clearRow(Grid *g, short y) {
 		g->tiles[x][y] = 0;
 	}
 }
+void clear(Grid *g) {
+	for(short x = 0; x < WIDTH; x++) {
+		for(short y = 0; y < HEIGHT; y++) {
+			g->tiles[x][y] = 0;
+		}
+	}
+}
 //Fills all tiles on the given row, no bounds checking
 void fillRow(Grid *g, short y) {
 	for(short x = 0; x < WIDTH; x++) {
@@ -324,25 +334,6 @@ GameState gameState;
 unsigned char score = 0;
 unsigned char highScore = 0;
 unsigned char rnd = 0;
-void setScreenState(ScreenState next) {
-	screenState = next;
-	unsigned int a = 0;
-	switch(next) {
-		case Title:
-			//Load the high score
-			highScore = load(a);
-			break;
-		case Game:
-			InitGame();
-			break;
-		case FinalScore:
-			if(score > highScore) {
-				store(0, score);
-			}
-			break;
-	}
-}
-
 short getLength(short sh) {
 	unsigned char length = 1;
 	//Count the number in case it is 0
@@ -399,14 +390,14 @@ void UpdateTitle() {
 
 
 	char pressed = ~PIN_BUTTONS;
-	static char pressed_prev = 0;
-	char justPressed = pressed & ~pressed_prev;
-	switch(justPressed) {
+	//static char pressed_prev = 0;
+	//char justPressed = pressed & ~pressed_prev;
+	switch(pressed) {
 		case 1:	//Right
 			rnd++;
 			break;
 		case 2:	//Middle
-			setScreenState(Game);
+			screenState = Game;
 			break;
 		case 3:	//Middle + Right
 			break;
@@ -414,15 +405,18 @@ void UpdateTitle() {
 			rnd--;
 			break;
 		case 5:	//Left + Right
-			
+			srand(rnd);
+			rnd = rand();
 			break;
 		case 6:	//Left + Middle
 			
 			break;
 		case 7:	//Left + Middle + Right
+			highScore = 0;
+			store(0xFF, highScore);
 			break;
 	}
-	pressed_prev = pressed;
+	//pressed_prev = pressed;
 }
 void UpdateFinalScore() {
 	
@@ -458,7 +452,9 @@ void UpdateFinalScore() {
 	switch(justPressed) {
 		case 0: break;
 		default:
-			setScreenState(Title);
+			highScore = highScore > score ? highScore : score;
+			store(0xFF, highScore);
+			screenState = Title;
 			break;
 	}
 	pressed_prev = pressed;
@@ -471,24 +467,17 @@ void drawTile(short x, short y, short fill) {
 		}
 	}
 }
-void InitGame() {
-	//Initialize the game
-	gameState = Init;
-	//Reset the RNG
-	srand(rnd);
-	//Reset the score
-	score = 0;
-
-	//To do: Reset all static variables
-}
 void UpdateGame() {
 	const short standardInterval = 10;
 	static Grid g;
 	static Tetra t;
 	static GameState gameState = Init;
 
+	static char pressed_prev = 0;
+	static char hard_drop = 0;
+
 	static short rowCleared = 0;
-	static char rowState = 1;
+	static char rowState = 0;
 	static short placed = 0;
 	static short fall = 0;
 
@@ -498,18 +487,27 @@ void UpdateGame() {
 		return;
 	}
 	switch(gameState) {
-	case Init:
+	case Init: {
+		clear(&g);
 		t = CreateTetra();
-		score = 0;
+		pressed_prev = 0;
+		hard_drop = 0;
+		rowCleared = 0;
+		rowState = 0;
+		placed = 0;
+		fall = 0;
 		time = standardInterval;
+		//Reset the RNG
+		srand(rnd);
+		//Reset the score
+		score = 0;
 		gameState = Play;
+		//To do: Reset all static variables so that they don't carry over from previous games
 		break;
-	case Play: {
+	} case Play: {
 		//remove(&g, &t);			//Remove so that we can move
 
 		char pressed = ~PIN_BUTTONS;
-		static char pressed_prev = 0;
-		static char hard_drop = 0;
 		//char justPressed = pressed & ~pressed_prev;
 		switch(pressed) {
 		case 1:	//Right
@@ -561,7 +559,10 @@ void UpdateGame() {
 				fall = 0;
 				t = CreateTetra();
 				if(gameState != RowClear) {
-					if(hard_drop > 4) {
+					if(hard_drop > 12) {
+						time = 0;
+					}
+					else if(hard_drop > 4) {
 						time = standardInterval / 2;
 					} else {
 						time = standardInterval * 5;
@@ -624,7 +625,10 @@ void UpdateGame() {
 			time = standardInterval;
 			gameState = GameOverFlash;
 		} else {
-			setScreenState(FinalScore);
+			time = standardInterval;
+			screenState = FinalScore;
+
+			gameState = Init;				//For some reason, future games immediately go to the Game Over screen unless the state is set here
 		}
 		break;
 	case GameOverFlash:
@@ -730,10 +734,13 @@ int main(void)
 	*/
 	DDR_BUTTONS = 0xFF;
 	PIN_BUTTONS = -1;
-	    nokia_lcd_init();
-	    nokia_lcd_clear();
-		TimerSet(10);
-		TimerOn();
+	nokia_lcd_init();
+	nokia_lcd_clear();
+	TimerSet(10);
+	TimerOn();
+
+	screenState = Title;
+	highScore = load(0xFF);
 	while(1) {
 		UpdateState();
 		while(!TimerFlag);
