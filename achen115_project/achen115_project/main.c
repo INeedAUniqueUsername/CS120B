@@ -15,50 +15,6 @@
 #define HEIGHT 21
 #define DDR_BUTTONS DDRD
 #define PIN_BUTTONS PIND
-
-#define EEPE 1
-#define EEMPE 2
-void store(unsigned int address, unsigned char data)
-{
-	/* Wait for completion of previous write */
-	while(EECR & (1<<EEPE))
-	;
-	/* Set up address and Data Registers */
-	EEAR = address;
-	EEDR = data;
-	/* Write logical one to EEMPE */
-	EECR |= (1<<EEMPE);
-	/* Start eeprom write by setting EEPE */
-	EECR |= (1<<EEPE);
-
-	while(EECR & 4);//Wait for write
-	EEAR = address;	//Set address
-	EEDR = data;	//Set data
-	EECR &= 0x0F;	//Write mode
-	EECR &= ~2;		//Off Write enable
-	EECR |= 4;		//On Master write enable
-	EECR |= 2;		//Write enable
-	while(EECR & 4);//Wait for write
-}
-#define EERE 0
-unsigned char load(unsigned int address) {
-	/* Wait for completion of previous write */
-	while(EECR & (1<<EEPE))
-	;
-	/* Set up address register */
-	EEAR = address;
-	/* Start eeprom read by writing EERE */
-	EECR |= (1<<EERE);
-	/* Return data from Data Register */
-	return EEDR;
-/*
-	while((EECR & 4) || (EECR & 2));//Wait for write
-	EEAR = address;	//Set address
-	EECR |= 1;		//Read enable
-	while(EECR & 1);
-	return EEDR;	//Done
-	*/
-}
 typedef struct Point {
 	signed short x, y;
 } Point;
@@ -480,7 +436,7 @@ void UpdateFinalScore() {
 		case 0: break;
 		default:
 			highScore = highScore > score ? highScore : score;
-			store(0xFF, highScore);
+			eeprom_write_byte(0xFF, highScore);
 			screenState = Title;
 			break;
 	}
