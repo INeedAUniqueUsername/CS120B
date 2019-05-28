@@ -15,6 +15,7 @@
 #define HEIGHT 21
 #define DDR_BUTTONS DDRD
 #define PIN_BUTTONS PIND
+#define PORT_MUSIC PIND
 typedef struct Point {
 	signed short x, y;
 } Point;
@@ -346,6 +347,7 @@ void getString(short sh, char* str, short length) {
 	}
 	return;
 }
+typedef enum SoundState { MusicTitle = 1, MusicTypeA = 2, MusicGameOver = 3, MusicHighScore = 4 } SoundState;
 void UpdateTitle() {
 	
 	nokia_lcd_clear();
@@ -677,9 +679,15 @@ void UpdateGame() {
 }
 void UpdateState() {
 	switch(screenState) {
-	case Title: UpdateTitle(); break;
-	case Game: UpdateGame(); break;
-	case FinalScore: UpdateFinalScore(); break;
+	case Title: UpdateTitle();
+		PORT_MUSIC = (MusicTitle) << 3;
+		break;
+	case Game: UpdateGame();
+		PORT_MUSIC = (MusicTypeA) << 3;
+		break;
+	case FinalScore: UpdateFinalScore();
+		PORT_MUSIC = (MusicHighScore) << 3;
+		break;
 	}
 }
 int main(void)
@@ -721,6 +729,7 @@ int main(void)
 	*/
 	DDR_BUTTONS = ~0x07;
 	PIN_BUTTONS = -1;
+	PORT_MUSIC = 0;
 	nokia_lcd_init();
 	nokia_lcd_clear();
 	TimerSet(10);
