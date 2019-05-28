@@ -732,7 +732,7 @@ int main(void)
 	TimerOn();
 	*/
 	DDR_BUTTONS = ~0x07;
-	PIN_BUTTONS = -1;
+	PIN_BUTTONS = 7;
 	PORT_MUSIC = 0;
 	DDRB = -1;
 	PORTB = 0;
