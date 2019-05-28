@@ -372,7 +372,7 @@ void UpdateTitle() {
 	nokia_lcd_render();
 
 
-	char pressed = ~PIN_BUTTONS;
+	char pressed = ~PIN_BUTTONS & 7;
 	//static char pressed_prev = 0;
 	//char justPressed = pressed & ~pressed_prev;
 	switch(pressed) {
@@ -430,7 +430,7 @@ void UpdateFinalScore() {
 	nokia_lcd_render();
 
 
-	char pressed = ~PIN_BUTTONS;
+	char pressed = ~PIN_BUTTONS & 7;
 	static char pressed_prev = 0;
 	char justPressed = pressed & ~pressed_prev;
 	switch(justPressed) {
@@ -494,7 +494,7 @@ void UpdateGame() {
 	} case Play: {
 		//remove(&g, &t);			//Remove so that we can move
 
-		char pressed = ~PIN_BUTTONS;
+		char pressed = ~PIN_BUTTONS & 7;
 		//char justPressed = pressed & ~pressed_prev;
 		switch(pressed) {
 		case 1:	//Right
