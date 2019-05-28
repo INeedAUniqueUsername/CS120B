@@ -315,6 +315,7 @@ typedef enum GameState { Init, Play, PlayInterval, RowClear, GameOver, GameOverF
 GameState gameState;
 unsigned char score = 0;
 unsigned char highScore = 0;
+unsigned char ADDR_SCORE = 0xFF;
 unsigned char rnd = 0;
 short getLength(short sh) {
 	unsigned char length = 1;
@@ -396,7 +397,7 @@ void UpdateTitle() {
 			break;
 		case 7:	//Left + Middle + Right
 			highScore = 0;
-			eeprom_write_byte(0xFF, highScore);
+			eeprom_write_byte(&ADDR_SCORE, highScore);
 			break;
 	}
 	//pressed_prev = pressed;
@@ -436,7 +437,7 @@ void UpdateFinalScore() {
 		case 0: break;
 		default:
 			highScore = highScore > score ? highScore : score;
-			eeprom_write_byte(0xFF, highScore);
+			eeprom_write_byte(&ADDR_SCORE, highScore);
 			screenState = Title;
 			break;
 	}
@@ -726,7 +727,7 @@ int main(void)
 	TimerOn();
 
 	screenState = Title;
-	highScore = eeprom_read_byte(0xFF);
+	highScore = eeprom_read_byte(&ADDR_SCORE);
 	while(1) {
 		UpdateState();
 		while(!TimerFlag);
