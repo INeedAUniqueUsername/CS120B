@@ -105,10 +105,7 @@ void PWM_off() {
 	TCCR0B = 0x00;
 }
 
-const short whole = 1000;
-const short halfdot = whole * 3 / 4;
-const short half = whole/2;
-const short quarter = half/2;
+short whole, halfdot, half, quarter;
 
 const double
 			G3 = 196.0,
@@ -315,8 +312,41 @@ void typeA() {
 	set_PWM(notes[note]);
 	time = times[note];
 }
+typedef enum SoundState { Title = 1, TypeA = 2, GameOver = 3, HighScore = 4 } SoundState;
+SoundState soundState = Title;
+void UpdateState() {
+	SoundState next;
+	switch(PINA & 7) {
+		case Title:
+			next = Title;
+			break;
+		case TypeA:
+			next = TypeA;
+			break;
+		case GameOver:
+			next = GameOver;
+			break;
+		case HighScore:
+			next = HighScore;
+			break;
+		default:
+			return;
+	}
+	if(soundState != next) {
+		//Transition now
+		soundState = next;
+		//Reset note and time
+		note = -1;
+		time = 0;
+	}
+}
 int main(void)
 {
+	whole = 1000;
+	halfdot = whole * 3 / 4;
+	half = whole/2;
+	quarter = half/2;
+
     /* Replace with your application code */
 	DDRA = 0;	PINA = -1;
 	DDRB = 0x1F; PORTB = 0;
@@ -324,7 +354,19 @@ int main(void)
 	TimerSet(1);
 	TimerOn();
 	while(1) {
-		typeA();
+		switch(soundState) {
+		case Title:
+			break;
+		case TypeA:
+			typeA();
+			break;
+		case GameOver:
+			break;
+		case HighScore:
+			highScore();
+			break;
+		}
+		UpdateState();
 		while(!TimerFlag);
 		TimerFlag = 0;
 	}
