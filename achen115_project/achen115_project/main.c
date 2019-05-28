@@ -719,7 +719,7 @@ int main(void)
 	TimerSet(1000);
 	TimerOn();
 	*/
-	DDR_BUTTONS = 0xFF;
+	DDR_BUTTONS = ~0x07;
 	PIN_BUTTONS = -1;
 	nokia_lcd_init();
 	nokia_lcd_clear();
