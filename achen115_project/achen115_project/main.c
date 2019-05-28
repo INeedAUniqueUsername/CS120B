@@ -5,6 +5,7 @@
  * Author : Alex
  */ 
 
+#include <avr/eeprom.h>
 #include <avr/io.h>
 #include "nokia5110.c"
 #include "timer.h"
@@ -15,8 +16,21 @@
 #define DDR_BUTTONS DDRD
 #define PIN_BUTTONS PIND
 
-void store(unsigned char address, unsigned char data)
+#define EEPE 1
+#define EEMPE 2
+void store(unsigned int address, unsigned char data)
 {
+	/* Wait for completion of previous write */
+	while(EECR & (1<<EEPE))
+	;
+	/* Set up address and Data Registers */
+	EEAR = address;
+	EEDR = data;
+	/* Write logical one to EEMPE */
+	EECR |= (1<<EEMPE);
+	/* Start eeprom write by setting EEPE */
+	EECR |= (1<<EEPE);
+
 	while(EECR & 4);//Wait for write
 	EEAR = address;	//Set address
 	EEDR = data;	//Set data
@@ -26,12 +40,24 @@ void store(unsigned char address, unsigned char data)
 	EECR |= 2;		//Write enable
 	while(EECR & 4);//Wait for write
 }
+#define EERE 0
 unsigned char load(unsigned int address) {
+	/* Wait for completion of previous write */
+	while(EECR & (1<<EEPE))
+	;
+	/* Set up address register */
+	EEAR = address;
+	/* Start eeprom read by writing EERE */
+	EECR |= (1<<EERE);
+	/* Return data from Data Register */
+	return EEDR;
+/*
 	while((EECR & 4) || (EECR & 2));//Wait for write
 	EEAR = address;	//Set address
 	EECR |= 1;		//Read enable
 	while(EECR & 1);
 	return EEDR;	//Done
+	*/
 }
 typedef struct Point {
 	signed short x, y;
@@ -398,6 +424,7 @@ void UpdateTitle() {
 			break;
 		case 2:	//Middle
 			screenState = Game;
+			gameState = Init;
 			break;
 		case 3:	//Middle + Right
 			break;
@@ -413,7 +440,7 @@ void UpdateTitle() {
 			break;
 		case 7:	//Left + Middle + Right
 			highScore = 0;
-			store(0xFF, highScore);
+			eeprom_write_byte(0xFF, highScore);
 			break;
 	}
 	//pressed_prev = pressed;
@@ -490,12 +517,15 @@ void UpdateGame() {
 	case Init: {
 		clear(&g);
 		t = CreateTetra();
+
 		pressed_prev = 0;
 		hard_drop = 0;
+
 		rowCleared = 0;
 		rowState = 0;
 		placed = 0;
 		fall = 0;
+
 		time = standardInterval;
 		//Reset the RNG
 		srand(rnd);
@@ -740,7 +770,7 @@ int main(void)
 	TimerOn();
 
 	screenState = Title;
-	highScore = load(0xFF);
+	highScore = eeprom_read_byte(0xFF);
 	while(1) {
 		UpdateState();
 		while(!TimerFlag);
