@@ -541,7 +541,6 @@ void UpdateGame() {
 						rowCleared = y;
 						rowState = 6;
 						gameState = RowClear;
-						score += 1 + y;
 						break;
 					}
 				}
@@ -590,8 +589,12 @@ void UpdateGame() {
 			time = standardInterval;
 		} else {
 			descendRow(&g, rowCleared);
+			//Add points based on the row cleared
+			score += 1 + rowCleared;
 
+			//See if we should return to gameplay
 			gameState = Play;
+			//Check if we have more rows to clear
 			for(unsigned short y = 0; y < HEIGHT; y++) {
 				if(rowFull(&g, y)) {
 					rowCleared = y;
@@ -601,8 +604,10 @@ void UpdateGame() {
 				}
 			}
 			if(gameState != RowClear) {
+				//Return to gameplay
 				time = standardInterval * 3;
 			} else {
+				//Clear another row
 				time = standardInterval;
 			}
 		}
