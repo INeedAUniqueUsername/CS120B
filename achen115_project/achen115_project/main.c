@@ -16,6 +16,7 @@
 #define DDR_BUTTONS DDRD
 #define PIN_BUTTONS PIND
 #define PORT_MUSIC PIND
+#define TIMER_INTERVAL 10
 typedef struct Point {
 	signed short x, y;
 } Point;
@@ -454,7 +455,7 @@ void drawTile(short x, short y, short fill) {
 	}
 }
 void UpdateGame() {
-	const short standardInterval = 10;
+	const short standardInterval = 100;
 	static Grid g;
 	static Tetra t;
 	static GameState gameState = Init;
@@ -469,7 +470,7 @@ void UpdateGame() {
 
 	static short time = 0;
 
-	if(--time > 0) {
+	if((time -= TIMER_INTERVAL) > 0) {
 		return;
 	}
 	switch(gameState) {
@@ -732,7 +733,7 @@ int main(void)
 	PORT_MUSIC = 0;
 	nokia_lcd_init();
 	nokia_lcd_clear();
-	TimerSet(10);
+	TimerSet(TIMER_INTERVAL);
 	TimerOn();
 
 	screenState = Title;
