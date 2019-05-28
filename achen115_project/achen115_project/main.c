@@ -682,12 +682,15 @@ void UpdateState() {
 	switch(screenState) {
 	case Title: UpdateTitle();
 		PORT_MUSIC = (MusicTitle) << 3;
+		PORTB = 0;
 		break;
 	case Game: UpdateGame();
 		PORT_MUSIC = (MusicTypeA) << 3;
+		PORTB = score;
 		break;
 	case FinalScore: UpdateFinalScore();
 		PORT_MUSIC = (MusicHighScore) << 3;
+		PORTB = 0;
 		break;
 	}
 }
@@ -731,6 +734,8 @@ int main(void)
 	DDR_BUTTONS = ~0x07;
 	PIN_BUTTONS = -1;
 	PORT_MUSIC = 0;
+	DDRB = -1;
+	PORTB = 0;
 	nokia_lcd_init();
 	nokia_lcd_clear();
 	TimerSet(TIMER_INTERVAL);
