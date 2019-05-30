@@ -654,7 +654,8 @@ void UpdateGame() {
 			tryTurnCCW(&g, &t);
 			break;
 		case 7:	//Left + Middle + Right
-			break;
+			gameState = GameOver;
+			return;
 		}
 		pressed_prev = pressed;
 		if(pressed_prev == pressed && pressed == 5) {
