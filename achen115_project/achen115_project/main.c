@@ -383,15 +383,17 @@ void UpdateTitle() {
 
 
 	char pressed = ~PIN_BUTTONS & 7;
-	//static char pressed_prev = 0;
-	//char justPressed = pressed & ~pressed_prev;
+	static char pressed_prev = 0;
+	char justPressed = pressed & ~pressed_prev;
 	switch(pressed) {
 		case 1:	//Right
 			rnd++;
 			break;
 		case 2:	//Middle
-			screenState = Game;
-			gameState = Init;
+			if(justPressed == 2) {
+				screenState = Game;
+				gameState = Init;
+			}
 			break;
 		case 3:	//Middle + Right
 			break;
@@ -407,10 +409,10 @@ void UpdateTitle() {
 			break;
 		case 7:	//Left + Middle + Right
 			highScore = 0;
-			eeprom_write_byte(&ADDR_SCORE, highScore);
+			eeprom_write_byte(ADDR_SCORE, highScore);
 			break;
 	}
-	//pressed_prev = pressed;
+	pressed_prev = pressed;
 }
 void UpdateFinalScore() {
 	
