@@ -751,10 +751,9 @@ void UpdateGame() {
 		}
 		break;
 	case GameOver:
-		if(rowCleared < HEIGHT && !rowEmpty(&g, rowCleared)) {
+		if(!rowEmpty(&g, 0)) {
 			clearRow(&g, 0);
 			descendRow(&g, 0);
-			rowCleared++;
 			time = standardInterval;
 			gameState = GameOverFlash;
 		} else {
