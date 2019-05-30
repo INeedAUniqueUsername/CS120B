@@ -463,8 +463,9 @@ void drawTile(short x, short y, short fill) {
 		}
 	}
 }
+#define STANDARD_INTERVAL 100;
 void UpdateGame() {
-	const short standardInterval = 100;
+	static short standardInterval = STANDARD_INTERVAL;
 	static Grid g;
 	static Tetra t;
 	static GameState gameState = Init;
@@ -495,6 +496,7 @@ void UpdateGame() {
 		placed = 0;
 		fall = 0;
 
+		standardInterval = STANDARD_INTERVAL;
 		time = standardInterval;
 		//Reset the RNG
 		srand(rnd);
