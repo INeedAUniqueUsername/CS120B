@@ -176,6 +176,13 @@ void clear(Grid *g) {
 		}
 	}
 }
+void fill(Grid *g) {
+	for(short x = 0; x < WIDTH; x++) {
+		for(short y = 0; y < HEIGHT; y++) {
+			g->tiles[x][y] = 1;
+		}
+	}
+}
 //Fills all tiles on the given row, no bounds checking
 void fillRow(Grid *g, short y) {
 	for(short x = 0; x < WIDTH; x++) {
@@ -200,10 +207,10 @@ char rowFull(Grid *g, short y) {
 	}
 	return 1;
 }
-//Returns whether the row is completely filled, no bounds checking
+//Returns whether the row is completely empty, no bounds checking
 char rowEmpty(Grid *g, short y) {
 	for(short x = 0; x < WIDTH; x++) {
-		if(!g->tiles[x][y]) {
+		if(g->tiles[x][y]) {
 			return 0;
 		}
 	}
