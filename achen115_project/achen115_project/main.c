@@ -567,7 +567,6 @@ void UpdateGame() {
 	static short standardInterval = STANDARD_INTERVAL;
 	static Grid g;
 	static Tetra t;
-	static GameState gameState = Init;
 
 	static char pressed_prev = 0;
 	static char hard_drop = 0;
