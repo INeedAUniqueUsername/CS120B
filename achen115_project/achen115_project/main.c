@@ -443,13 +443,13 @@ void UpdateFinalScore() {
 
 
 	char pressed = ~PIN_BUTTONS & 7;
-	static char pressed_prev = 0;
+	static char pressed_prev = 7;
 	char justPressed = pressed & ~pressed_prev;
 	switch(justPressed) {
 		case 0: break;
 		default:
 			highScore = highScore > score ? highScore : score;
-			eeprom_write_byte(&ADDR_SCORE, highScore);
+			eeprom_write_byte(ADDR_SCORE, highScore);
 			screenState = Title;
 			break;
 	}
@@ -756,7 +756,8 @@ int main(void)
 	TimerOn();
 
 	screenState = Title;
-	highScore = eeprom_read_byte(&ADDR_SCORE);
+	highScore = eeprom_read_byte(ADDR_SCORE);
+
 	while(1) {
 		UpdateState();
 		while(!TimerFlag);
