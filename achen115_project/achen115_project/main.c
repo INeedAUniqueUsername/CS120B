@@ -700,6 +700,8 @@ void UpdateGame() {
 				//Game over
 				gameState = GameOver;
 				rowCleared = 0;
+				//Restore the standard interval
+				standardInterval = STANDARD_INTERVAL;
 				time = standardInterval;
 			}
 		} else {
@@ -741,6 +743,9 @@ void UpdateGame() {
 			if(gameState != RowClear) {
 				//Return to gameplay
 				time = standardInterval * 3;
+				//Make the game faster depending on score
+				standardInterval = STANDARD_INTERVAL - (score / 5);
+				
 				//Save the game
 				SaveState();
 				SaveGame(&g, &t);
