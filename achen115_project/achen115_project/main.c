@@ -318,12 +318,14 @@ void remove(Grid *g, Tetra *t) {
 		}
 	}
 }
-typedef enum ScreenState { Title, Game, FinalScore } ScreenState;
+typedef enum ScreenState { Title = 0, Game = 1, FinalScore = 2 } ScreenState;
 ScreenState screenState;
-typedef enum GameState { Init, Play, PlayInterval, RowClear, GameOver, GameOverFlash } GameState;
+typedef enum GameState { Init, Load, Play, PlayInterval, RowClear, GameOver, GameOverFlash } GameState;
 GameState gameState;
 unsigned char score = 0;
 unsigned char highScore = 0;
+unsigned char ADDR_STATE = 0x20;
+unsigned char ADDR_GAME = 0xA0;
 unsigned char ADDR_SCORE = 0xFF;
 unsigned char rnd = 0;
 short getLength(short sh) {
@@ -464,6 +466,103 @@ void drawTile(short x, short y, short fill) {
 	}
 }
 #define STANDARD_INTERVAL 100;
+void LoadState() {
+	//Load the high score
+	highScore = eeprom_read_byte(ADDR_SCORE);
+
+	//Load the screen state
+	screenState = eeprom_read_byte(ADDR_STATE);
+
+	//In case we're loading a game in progress
+	if(screenState == Game)
+		gameState = Load;
+}
+void LoadGame(Grid *g, Tetra *t) {
+	gameState = Play;
+	unsigned char address = ADDR_GAME;
+	//Load the score
+	score = eeprom_read_byte(address);
+	address++;
+	//Load the rng
+	rnd = eeprom_read_byte(address);
+	srand(rnd);
+	address++;
+	//Load sections of the grid as chars
+	unsigned char block = eeprom_read_byte(address);
+	address++;
+	unsigned char blockIndex = 0;
+	for(short x = 0; x < WIDTH; x++) {
+		for(short y = 0; y < HEIGHT; y++) {
+			g->tiles[x][y] = (block >> blockIndex) & 1;
+			if(++blockIndex == 8) {
+				block = eeprom_read_byte(address);
+				address++;
+				blockIndex = 0;
+			}
+		}
+	}
+
+	//Store the tetra coordinates each as bytes
+	t->pos.x = eeprom_read_byte(address);
+	address++;
+	t->pos.y = eeprom_read_byte(address);
+	address++;
+	for(short i = 0; i < 4; i++) {
+		t->tiles[i].x = eeprom_read_byte(address);
+		address++;
+		t->tiles[i].y = eeprom_read_byte(address);
+		address++;
+	}
+}
+void SaveState() {
+	//Save the high score
+	eeprom_write_byte(ADDR_SCORE, highScore);
+	eeprom_write_byte(ADDR_STATE, screenState);
+}
+void SaveGame(Grid *g, Tetra *t) {
+	//We're saving a game in progress
+	unsigned char address = ADDR_GAME;
+
+	//Save the score
+	eeprom_write_byte(address, score);
+	address++;
+
+	//Save the RNG
+	eeprom_write_byte(address, rnd);
+	address++;
+
+	//Store sections of the grid as chars
+	unsigned char block = 0;
+	unsigned char blockIndex = 0;
+	for(short x = 0; x < WIDTH; x++) {
+		for(short y = 0; y < HEIGHT; y++) {
+			//Store in block
+			block |= (g->tiles[x][y]) << blockIndex;
+			if(++blockIndex == 8) {
+				//Save the block and create a new one
+				eeprom_write_byte(address, block);
+				block = 0;
+				blockIndex = 0;
+				address++;
+			}
+		}
+	}
+	//Write the last block
+	eeprom_write_byte(address, block);
+	address++;
+
+	//Store the tetra coordinates each as bytes
+	eeprom_write_byte(address, t->pos.x);
+	address++;
+	eeprom_write_byte(address, t->pos.y);
+	address++;
+	for(short i = 0; i < 4; i++) {
+		eeprom_write_byte(address, t->tiles[i].x);
+		address++;
+		eeprom_write_byte(address, t->tiles[i].y);
+		address++;
+	}
+}
 void UpdateGame() {
 	static short standardInterval = STANDARD_INTERVAL;
 	static Grid g;
@@ -504,6 +603,29 @@ void UpdateGame() {
 		score = 0;
 		gameState = Play;
 		//To do: Reset all static variables so that they don't carry over from previous games
+		break;
+
+	} case Load:{
+		//Initialize before loading
+		fill(&g);
+		t = CreateTetra();
+
+		pressed_prev = 0;
+		hard_drop = 0;
+
+		rowCleared = 0;
+		rowState = 0;
+		placed = 0;
+		fall = 0;
+
+		standardInterval = STANDARD_INTERVAL;
+		time = standardInterval;
+		//Reset the RNG
+		srand(rnd);
+		//Reset the score
+		score = 0;
+		gameState = Play;
+		LoadGame(&g, &t);
 		break;
 	} case Play: {
 		//remove(&g, &t);			//Remove so that we can move
@@ -567,7 +689,9 @@ void UpdateGame() {
 					} else {
 						time = standardInterval * 5;
 					}
-					
+					//Save the game
+					SaveState();
+					SaveGame(&g, &t);
 				} else {
 					time = standardInterval;
 				}
@@ -617,6 +741,9 @@ void UpdateGame() {
 			if(gameState != RowClear) {
 				//Return to gameplay
 				time = standardInterval * 3;
+				//Save the game
+				SaveState();
+				SaveGame(&g, &t);
 			} else {
 				//Clear another row
 				time = standardInterval;
