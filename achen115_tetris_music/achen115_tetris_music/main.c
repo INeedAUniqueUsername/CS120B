@@ -316,7 +316,11 @@ typedef enum SoundState { Title = 1, TypeA = 2, GameOver = 3, HighScore = 4 } So
 SoundState soundState = Title;
 void UpdateState() {
 	SoundState next;
-	switch(PINA & 7) {
+	unsigned int c = uart_getc();
+	if(c == UART_NO_DATA)
+		return;
+
+	switch(c & 0xFF) {
 		case Title:
 			next = Title;
 			break;
