@@ -128,8 +128,8 @@ const double
 			Db5 = 544.37, 
 			D5 = 587.33;
 
-static short time = 0;
-static short note = -1;
+short noteTime = 0;
+short note = -1;
 void highScore() {
 	const double notes[] = {
 		Eb4, F4, G4,
@@ -181,13 +181,13 @@ void highScore() {
 	};
 	const short length = 65;
 
-	if(--time > 0)
+	if(--noteTime > 0)
 		return;
 	if(++note >= length)
 		note = 0;
 
 	set_PWM(notes[note]);
-	time = times[note];	
+	noteTime = times[note];	
 }
 void typeA() {
 	const double notes[] = {
@@ -304,13 +304,13 @@ void typeA() {
 	};
 	const short length = 102;//122;
 
-	if(--time > 0)
+	if(--noteTime > 0)
 		return;
 	if(++note >= length)
 		note = 0;
 
 	set_PWM(notes[note]);
-	time = times[note];
+	noteTime = times[note];
 }
 typedef enum SoundState { Title = 1, TypeA = 2, GameOver = 3, HighScore = 4 } SoundState;
 SoundState soundState = Title;
@@ -337,7 +337,7 @@ void UpdateState() {
 		soundState = next;
 		//Reset note and time
 		note = -1;
-		time = 0;
+		noteTime = 0;
 	}
 }
 int main(void)
@@ -353,14 +353,18 @@ int main(void)
 	PWM_on();
 	TimerSet(1);
 	TimerOn();
+	noteTime = 0;
+	note = -1;
 	while(1) {
 		switch(soundState) {
 		case Title:
+			set_PWM(0);
 			break;
 		case TypeA:
 			typeA();
 			break;
 		case GameOver:
+			set_PWM(0);
 			break;
 		case HighScore:
 			highScore();
