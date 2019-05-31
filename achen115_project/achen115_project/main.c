@@ -17,6 +17,83 @@
 #define PIN_BUTTONS PIND
 #define PORT_MUSIC PIND
 #define TIMER_INTERVAL 10
+
+//Custom character info: https://www.engineersgarage.com/embedded/avr-microcontroller-projects/lcd-interface-atmega16-circuit
+void InitializeChar(char index, char rows[]) {
+	LCD_WriteCommand(0x40 + index*8);	//Start writing custom character
+	//Write each row
+	for(short i = 0; i < 8; i++) {
+		LCD_WriteData(rows[i]);
+	}
+}
+#define CHAR_TETRA_T 0
+#define CHAR_TETRA_L 1
+#define CHAR_TETRA_Z 2
+#define CHAR_TETRA_I 3
+#define CHAR_TETRA_O 4
+void InitializeCustom() {
+	//Rows of dots
+	char T[] = {
+		0x00,
+		0x00,
+		0x18,
+		0x18,
+		0x1E,
+		0x1E,
+		0x18,
+		0x18,
+	};
+	InitializeChar(0, T);
+
+	char L[] = {
+		0x00,
+		0x00,
+		0x18,
+		0x18,
+		0x18,
+		0x18,
+		0x1E,
+		0x1E,
+	};
+	InitializeChar(1, L);
+
+	char Z[] = {
+		0x00,
+		0x00,
+		0x06,
+		0x06,
+		0x1E,
+		0x1E,
+		0x18,
+		0x18,
+	};
+	InitializeChar(2, Z);
+
+	char I[] = {
+		0x18,
+		0x18,
+		0x18,
+		0x18,
+		0x18,
+		0x18,
+		0x18,
+		0x18
+	};
+	InitializeChar(3, I);
+
+	char O[] = {
+		0x00,
+		0x00,
+		0x00,
+		0x00,
+		0x1E,
+		0x1E,
+		0x1E,
+		0x1E
+	};
+	InitializeChar(4, O);
+}
+
 typedef struct Point {
 	signed short x, y;
 } Point;
