@@ -160,11 +160,12 @@ typedef struct Tetra {
 #define nw (Point) { .x = -1, .y = 1 }	//Northwest
 #define c (Point) { .x = 0, .y = 0 }	//Center
 // Tetromino templates
-//  ...  ...  .+.  ...
-//  .+.  .++  .+.  .++
-//  .+.  ++.  .+.  .++
-//  .++  ...  .+.  ...
+//  ...  ...  ...  .+.  ...
+//  ...  .+.  .++  .+.  .++
+//  +++  .+.  ++.  .+.  .++
+//  .+.  .++  ...  .+.  ...
 // Points are copied on assignment
+Tetra T(Point pos) { return (Tetra) {.pos = pos, .tiles = {w, c, e, s}}; }
 Tetra L(Point pos) { return (Tetra) {.pos = pos, .tiles = {n, c, s, se}}; }
 Tetra Z(Point pos) { return (Tetra) {.pos = pos, .tiles = {w, c, n, ne}}; }
 Tetra I(Point pos) { return (Tetra) {.pos = pos, .tiles = {s, c, n, nn}}; }
@@ -208,12 +209,12 @@ Tetra CreateTetra() {
 	char x = WIDTH/2 + rand()%8 - 4;
 	Point pos = {.x = x, .y = HEIGHT + 2};
 	Tetra t;
-	switch(rand()%4) {
-		case 0: t = L(pos); break;
-		case 1: t = Z(pos); break;
-		case 2: t = I(pos); break;
-		default:
-		case 3: t = O(pos); break;
+	switch(rand()%5) {
+		case 0: t = T(pos); break;
+		case 1: t = L(pos); break;
+		case 2: t = Z(pos); break;
+		case 3: t = I(pos); break;
+		case 4: t = O(pos); break;
 	}
 	switch(rand()%3) {
 		case 0:
