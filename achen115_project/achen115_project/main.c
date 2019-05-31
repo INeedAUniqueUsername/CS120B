@@ -9,6 +9,8 @@
 #include <avr/io.h>
 #include "nokia5110.c"
 #include "timer.h"
+#include "io.c"
+#include "uart.c"
 
 #define FOR_TETRA for(unsigned short i = 0; i < 4; i++)
 #define WIDTH 12
@@ -406,6 +408,23 @@ unsigned char ADDR_STATE = 0x20;
 unsigned char ADDR_GAME = 0xA0;
 unsigned char ADDR_SCORE = 0xFF;
 unsigned char rnd = 0;
+void SetScreenState(ScreenState next) {
+	screenState = next;
+	switch(next) {
+	case Title:
+		uart_putc(MusicTitle);
+		break;
+	case Game:
+		uart_putc(MusicTypeA);
+		break;
+	case FinalScore:
+		uart_putc(MusicHighScore);
+		break;
+	case GameOver:
+		uart_putc(MusicGameOver)
+		break;
+	}
+}
 short getLength(short sh) {
 	unsigned char length = 1;
 	//Count the number in case it is 0
@@ -476,7 +495,8 @@ void UpdateTitle() {
 			break;
 		case 2:	//Middle
 			if(justPressed == 2) {
-				screenState = Game;
+				//screenState = Game;
+				SetScreenState(Game);
 				gameState = Init;
 			}
 			break;
@@ -535,7 +555,8 @@ void UpdateFinalScore() {
 		default:
 			highScore = highScore > score ? highScore : score;
 			eeprom_write_byte(ADDR_SCORE, highScore);
-			screenState = Title;
+			//screenState = Title;
+			SetScreenState(Title);
 			break;
 	}
 	pressed_prev = pressed;
@@ -648,6 +669,7 @@ void SaveGame(Grid *g, Tetra *t) {
 }
 void UpdateGame() {
 	static short standardInterval = STANDARD_INTERVAL;
+
 	static Grid g;
 	static Tetra t;
 
@@ -846,7 +868,8 @@ void UpdateGame() {
 			gameState = GameOverFlash;
 		} else {
 			time = standardInterval;
-			screenState = FinalScore;
+			//screenState = FinalScore;
+			SetScreenState(FinalScore);
 
 			gameState = Init;				//For some reason, future games immediately go to the Game Over screen unless the state is set here
 		}
@@ -922,6 +945,11 @@ void UpdateState() {
 		PORT_MUSIC = (MusicHighScore) << 3;
 		PORTB = 0;
 		break;
+	default:
+		//screenState = Title;
+		SetScreenState(Title);
+		UpdateState();
+		break;
 	}
 }
 int main(void)
@@ -971,8 +999,10 @@ int main(void)
 	TimerSet(TIMER_INTERVAL);
 	TimerOn();
 
-	screenState = Title;
+	//screenState = Title;
+	SetScreenState(Title);
 	highScore = eeprom_read_byte(ADDR_SCORE);
+	uart_init(25);
 
 	while(1) {
 		UpdateState();
