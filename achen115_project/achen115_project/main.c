@@ -461,6 +461,11 @@ void UpdateTitle() {
 
 	nokia_lcd_render();
 
+	srand(rnd);
+	for(short i = 0; i < 32; i++) {
+		LCD_Cursor(i+1);
+		LCD_WriteData(rand()%5);
+	}
 
 	char pressed = ~PIN_BUTTONS & 7;
 	static char pressed_prev = 0;
