@@ -790,10 +790,21 @@ void UpdateGame() {
 				gameState = PlayInterval;
 				//Check for rows to clear
 				for(unsigned short y = HEIGHT - 1; y < HEIGHT; y--) {
+					//We decrement because we know when underflow happens
 					if(rowFull(&g, y)) {
 						rowCleared = y;
 						rowState = 6;
 						gameState = RowClear;
+
+						//Add extra points for each additional row filled at the same time
+						score += 1;
+						for(unsigned short yBelow = y - 1; yBelow < HEIGHT; yBelow--) {
+							//We decrement because we know when underflow happens
+							if(rowFull(&g, yBelow)) {
+								score++;
+							}
+						}
+
 						break;
 					}
 				}
@@ -854,10 +865,21 @@ void UpdateGame() {
 			gameState = Play;
 			//Check if we have more rows to clear
 			for(unsigned short y = HEIGHT - 1; y < HEIGHT; y--) {
+				//We decrement because we know when underflow happens
 				if(rowFull(&g, y)) {
 					rowCleared = y;
 					rowState = 6;
 					gameState = RowClear;
+
+					//Add extra points for each additional row filled at the same time
+					score += 1;
+					for(unsigned short yBelow = y - 1; yBelow < HEIGHT; yBelow--) {
+						//We decrement because we know when underflow happens
+						if(rowFull(&g, yBelow)) {
+							score++;
+						}
+					}
+
 					break;
 				}
 			}
@@ -877,20 +899,23 @@ void UpdateGame() {
 		}
 		break;
 	case GameOver:
+		//Flash dark and descend the rows until the grid is empty, then go to score screen
 		if(!rowEmpty(&g, 0)) {
+			//Descend the next row
 			clearRow(&g, 0);
 			descendRow(&g, 0);
 			time = standardInterval;
 			gameState = GameOverFlash;
 		} else {
+			//Done clearing the rows, so go to score screen
 			time = standardInterval;
 			//screenState = FinalScore;
 			SetScreenState(FinalScore);
-
-			gameState = Init;				//For some reason, future games immediately go to the Game Over screen unless the state is set here
+			gameState = Init;	//Prepare the state for the next game
 		}
 		break;
 	case GameOverFlash:
+		//Flash dark
 		time = standardInterval;
 		gameState = GameOver;
 		break;
@@ -898,27 +923,32 @@ void UpdateGame() {
 	nokia_lcd_clear();
 	if(gameState == GameOverFlash) {
 		//Black screen
-		for(short x = 0; x < WIDTH; x++) {
-			for(short y = 0; y < HEIGHT; y++) {
+		for(short y = 0; y < HEIGHT; y++) {
+			for(short x = 0; x < WIDTH; x++) {
 				drawTile(x, y, 1);
 			}
 		}
 	} else if(gameState == Play) {
+		//Draw the grid
 		for(short x = 0; x < WIDTH; x++) {
 			for(short y = 0; y < HEIGHT; y++) {
 				drawTile(x, y, g.tiles[x][y]);
 			}
 		}
+		//Draw the piece
 		for(short i = 0; i < 4; i++) {
 			Point p = getTile(&t, i);
 			if(p.y < HEIGHT) {
 				drawTile(p.x, p.y, 1);
 			}
 		}
+		//Create the ghost piece
 		Tetra landed = t;
+		//Descend it to the bottom
 		while(!land(&g, &landed)) {
 			down(&landed);
 		}
+		//Draw the ghost piece
 		for(short i = 0; i < 4; i++) {
 			Point p = getTile(&landed, i);
 			if(p.y < HEIGHT) {
@@ -926,11 +956,13 @@ void UpdateGame() {
 			}
 		}
 	} else if(gameState == PlayInterval) {
+		//Draw the grid
 		for(short x = 0; x < WIDTH; x++) {
 			for(short y = 0; y < HEIGHT; y++) {
 				drawTile(x, y, g.tiles[x][y]);
 			}
 		}
+		//Draw the ghost piece
 		for(short i = 0; i < 4; i++) {
 			Point p = getTile(&t, i);
 			if(p.y < HEIGHT) {
@@ -1019,7 +1051,8 @@ int main(void)
 	//screenState = Title;
 	SetScreenState(Title);
 	highScore = eeprom_read_byte(ADDR_SCORE);
-	uart_init(25);
+
+	uart_init(25); //https://circuitdigest.com/microcontroller-projects/uart-communication-between-two-atmega8-microcontrollers
 
 	while(1) {
 		UpdateState();
