@@ -833,15 +833,12 @@ void UpdateGame() {
 						rowState = 6;
 						gameState = RowClear;
 
-						//Add extra points for each additional row filled at the same time
-						score += 1;
 						for(unsigned short yBelow = y - 1; yBelow < HEIGHT; yBelow--) {
 							//We decrement because we know when underflow happens
 							if(rowFull(&g, yBelow)) {
 								score++;
 							}
 						}
-
 						break;
 					}
 				}
@@ -909,15 +906,6 @@ void UpdateGame() {
 					rowCleared = y;
 					rowState = 6;
 					gameState = RowClear;
-
-					//Add extra points for each additional row filled at the same time
-					score += 1;
-					for(unsigned short yBelow = y - 1; yBelow < HEIGHT; yBelow--) {
-						//We decrement because we know when underflow happens
-						if(rowFull(&g, yBelow)) {
-							score++;
-						}
-					}
 
 					break;
 				}
