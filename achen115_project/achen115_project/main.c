@@ -788,7 +788,7 @@ void UpdateGame() {
 				place(&g, &t);	//Place in grid
 				gameState = PlayInterval;
 				//Check for rows to clear
-				for(unsigned short y = 0; y < HEIGHT; y++) {
+				for(unsigned short y = HEIGHT - 1; y < HEIGHT; y--) {
 					if(rowFull(&g, y)) {
 						rowCleared = y;
 						rowState = 6;
@@ -851,7 +851,7 @@ void UpdateGame() {
 			//See if we should return to gameplay
 			gameState = Play;
 			//Check if we have more rows to clear
-			for(unsigned short y = 0; y < HEIGHT; y++) {
+			for(unsigned short y = HEIGHT - 1; y < HEIGHT; y--) {
 				if(rowFull(&g, y)) {
 					rowCleared = y;
 					rowState = 6;
