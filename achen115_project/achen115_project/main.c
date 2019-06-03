@@ -1061,8 +1061,12 @@ int main(void)
 	TimerSet(1000);
 	TimerOn();
 	*/
-	DDRD = 2;
+	DDRD = 0xF2;
+	PIND = 0x01;
 	PORTD = 0;
+
+	DDRC = 0xFF;
+	PORTC = 0;
 
 	DDRA = ~7;
 	PORTA = 0;
