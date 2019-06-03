@@ -554,6 +554,13 @@ void UpdateTitle() {
 	pressed_prev = pressed;
 }
 void UpdateFinalScore() {
+
+	static short time = 500;
+	if((time -= TIMER_INTERVAL) > 0) {
+		return;
+	}
+	time = 500;
+
 	//Print the final score
 	nokia_lcd_clear();
 	nokia_lcd_write_string("Your score: ", 1);
@@ -577,7 +584,10 @@ void UpdateFinalScore() {
 
 	//The player got a new high score this game
 	if(score > highScore) {
-		nokia_lcd_write_string("New high score!", 1);	
+		static char flash = 1;
+		flash = !flash;
+		if(flash)
+			nokia_lcd_write_string("New high score!", 1);	
 	}
 
 	nokia_lcd_render();
