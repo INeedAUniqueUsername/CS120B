@@ -36,12 +36,15 @@ char getInput() {
 #define CHAR_TETRA_Z 2
 #define CHAR_TETRA_I 3
 #define CHAR_TETRA_O 4
+//A vector of two short integers
 typedef struct Point {
 	signed short x, y;
 } Point;
+//Returns true if the point's x component is within the fixed width of the grid
 char inWidth(Point *p) {
 	return p->x > -1 && p->x < WIDTH;
 }
+//Adds two points together componentwise
 Point add(Point *p1, Point *p2) {
 	Point result;
 	result.x = p1->x + p2->x;
@@ -189,6 +192,7 @@ void clearRow(Grid *g, short y) {
 		g->tiles[x][y] = 0;
 	}
 }
+//Clears all the grid spaces
 void clear(Grid *g) {
 	for(short x = 0; x < WIDTH; x++) {
 		for(short y = 0; y < HEIGHT; y++) {
@@ -196,6 +200,7 @@ void clear(Grid *g) {
 		}
 	}
 }
+//Fills all the grid spaces
 void fill(Grid *g) {
 	for(short x = 0; x < WIDTH; x++) {
 		for(short y = 0; y < HEIGHT; y++) {
@@ -340,16 +345,21 @@ void remove(Grid *g, Tetra *t) {
 	}
 }
 */
+//The current state of the screen
 typedef enum ScreenState { Title = 0, Game = 1, FinalScore = 2 } ScreenState;
 ScreenState screenState;
+
+//The current state of the game
 typedef enum GameState { Init, Load, Play, PlayInterval, RowClear, GameOver, GameOverFlash } GameState;
 GameState gameState;
-unsigned char score = 0;
-unsigned char highScore = 0;
-unsigned char ADDR_STATE = 0x20;
-unsigned char ADDR_GAME = 0xA0;
-unsigned char ADDR_SCORE = 0xFF;
-unsigned char rnd = 0;
+
+unsigned char score = 0; //The current score for the game
+unsigned char highScore = 0; //The running high score
+unsigned char ADDR_STATE = 0x20;	//Unused: the location of the screen state
+unsigned char ADDR_GAME = 0xA0;		//Unused: the location of the game state
+unsigned char ADDR_SCORE = 0xFF;	//The location of the high score
+unsigned char rnd = 0;	//The Random Seed value
+//Counts the digits in the number
 short getLength(short sh) {
 	unsigned char length = 1;
 	//Count the number in case it is 0
@@ -363,6 +373,7 @@ short getLength(short sh) {
 	}
 	return length;
 }
+//Converts the number to a string
 void getString(short sh, char* str, short length) {
 	length--;
 	str[length] = 0;
@@ -379,7 +390,9 @@ void getString(short sh, char* str, short length) {
 	}
 	return;
 }
+//The states of the music
 typedef enum SoundState { MusicTitle = 1, MusicTypeA = 2, MusicGameOver = 3, MusicHighScore = 4 } SoundState;
+//Sets the screen state and resets the music if transitioning to another state
 void SetScreenState(ScreenState next) {
 	screenState = next;
 	switch(next) {
@@ -394,22 +407,25 @@ void SetScreenState(ScreenState next) {
 			break;
 	}
 }
+//Updates the title screen
 void UpdateTitle() {
-
+	//Write the title
 	nokia_lcd_clear();
 	nokia_lcd_write_string("Tetris!", 1);
+
+	//Write the high score
 	nokia_lcd_set_cursor(0, 10);
 	nokia_lcd_write_string("High score: ", 1);
 	nokia_lcd_set_cursor(0, 20);
-	
+	//Get the high score as a string
 	unsigned short highScoreLength = getLength(highScore);
 	char highScoreString[highScoreLength];
 	getString(highScore, highScoreString, highScoreLength);
 	nokia_lcd_write_string(highScoreString, 1);
-
+	//Write the Random Seed
 	nokia_lcd_set_cursor(0, 30);
 	nokia_lcd_write_string("Random seed:", 1);
-
+	//Get the Random Seed as a string
 	unsigned short rndLength = getLength(rnd);
 	char rndString[rndLength];
 	getString(rnd, rndString, rndLength);
@@ -419,6 +435,7 @@ void UpdateTitle() {
 
 	nokia_lcd_render();
 
+	//Write the Tetra sequence to the LCD
 	srand(rnd);
 	for(short i = 0; i < 32; i++) {
 		LCD_Cursor(i+1);
@@ -429,11 +446,14 @@ void UpdateTitle() {
 	char pressed = getInput();
 	static char pressed_prev = 0;
 	char justPressed = pressed & ~pressed_prev;
+	//Check for input
 	switch(pressed) {
 		case 1:	//Right
+			//Increment the seed
 			rnd++;
 			break;
 		case 2:	//Middle
+			//Start the game
 			if(justPressed == 2) {
 				//screenState = Game;
 				SetScreenState(Game);
@@ -443,9 +463,11 @@ void UpdateTitle() {
 		case 3:	//Middle + Right
 			break;
 		case 4:	//Left
+			//Decrement the seed
 			rnd--;
 			break;
 		case 5:	//Left + Right
+			//Randomize the seed
 			srand(rnd);
 			rnd = rand();
 			break;
@@ -453,6 +475,7 @@ void UpdateTitle() {
 			
 			break;
 		case 7:	//Left + Middle + Right
+			//Erase the high score
 			highScore = 0;
 			eeprom_write_byte(ADDR_SCORE, highScore);
 			break;
@@ -460,26 +483,28 @@ void UpdateTitle() {
 	pressed_prev = pressed;
 }
 void UpdateFinalScore() {
-	
+	//Print the final score
 	nokia_lcd_clear();
 	nokia_lcd_write_string("Your score: ", 1);
 	nokia_lcd_set_cursor(0, 10);
-
+	//Get the final score as a string
 	unsigned short scoreLength = getLength(score);
 	char scoreString[scoreLength];
 	getString(score, scoreString, scoreLength);
 	nokia_lcd_write_string(scoreString, 1);
-
+	//Print the high score
 	nokia_lcd_set_cursor(0, 20);
 	nokia_lcd_write_string("High score: ", 1);
 	nokia_lcd_set_cursor(0, 30);
-	
+	//Get the high score as a string
 	unsigned short highScoreLength = getLength(highScore);
 	char highScoreString[highScoreLength];
 	getString(highScore, highScoreString, highScoreLength);
 	nokia_lcd_write_string(highScoreString, 1);
 
 	nokia_lcd_set_cursor(0, 40);
+
+	//The player got a new high score this game
 	if(score > highScore) {
 		nokia_lcd_write_string("New high score!", 1);	
 	}
@@ -491,11 +516,16 @@ void UpdateFinalScore() {
 	char pressed = getInput();
 	static char pressed_prev = 7;
 	char justPressed = pressed & ~pressed_prev;
+	//Check for input
 	switch(justPressed) {
 		case 0: break;
 		default:
+			//Press any button
+
+			//Save the high score
 			highScore = highScore > score ? highScore : score;
 			eeprom_write_byte(ADDR_SCORE, highScore);
+			//Go back to title screen
 			//screenState = Title;
 			SetScreenState(Title);
 			break;
@@ -503,6 +533,9 @@ void UpdateFinalScore() {
 	pressed_prev = pressed;
 }
 //Draws a world tile as a 4x4 block on a vertical screen
+//x: the x position on the grid
+//y: the y position on the grid
+//fill: whether the tile is filled or empty
 void drawTile(short x, short y, short fill) {
 	for(short xi = 0; xi < 4; xi++) {
 		for(short yi = 0; yi < 4; yi++) {
@@ -511,6 +544,7 @@ void drawTile(short x, short y, short fill) {
 	}
 }
 #define STANDARD_INTERVAL 100;
+//Unused: loads the saved state from EEPROM
 void LoadState() {
 	//Load the high score
 	highScore = eeprom_read_byte(ADDR_SCORE);
@@ -522,6 +556,7 @@ void LoadState() {
 	if(screenState == Game)
 		gameState = Load;
 }
+//Unused: loads the saved game from EEPROM
 void LoadGame(Grid *g, Tetra *t) {
 	gameState = Play;
 	unsigned char address = ADDR_GAME;
@@ -559,11 +594,13 @@ void LoadGame(Grid *g, Tetra *t) {
 		address++;
 	}
 }
+//Unused: saves the current state in EEPROM
 void SaveState() {
 	//Save the high score
 	eeprom_write_byte(ADDR_SCORE, highScore);
 	eeprom_write_byte(ADDR_STATE, screenState);
 }
+//Unused: saves the current game in EEPROM
 void SaveGame(Grid *g, Tetra *t) {
 	//We're saving a game in progress
 	unsigned char address = ADDR_GAME;
@@ -608,21 +645,22 @@ void SaveGame(Grid *g, Tetra *t) {
 		address++;
 	}
 }
+//Updates the game
 void UpdateGame() {
 	static short standardInterval = STANDARD_INTERVAL;
 
-	static Grid g;
-	static Tetra t;
+	static Grid g;					//The current state of the playing field 
+	static Tetra t;					//The current Tetra we are dropping
 
 	static char pressed_prev = 0;
-	static char hard_drop = 0;
+	static char hard_drop = 0;		//How many Tetras we hard dropped in a row
 
-	static short rowCleared = 0;
-	static char rowState = 0;
-	static short placed = 0;
-	static short fall = 0;
+	static short rowCleared = 0;	//The row that we are clearing (only for state RowClear)
+	static char rowState = 0;		//The number of times the cleared row is flashing
+	static short placed = 0;		//Debug: How many Tetras have been placed
+	static short fall = 0;			//Debug: How far the Tetra fell
 
-	static short time = 0;
+	static short time = 0;	//Time until next update
 
 	if((time -= TIMER_INTERVAL) > 0) {
 		return;
@@ -647,7 +685,7 @@ void UpdateGame() {
 		//Reset the score
 		score = 0;
 		gameState = Play;
-		//To do: Reset all static variables so that they don't carry over from previous games
+		//Reset all static variables so that they don't carry over from previous games
 		break;
 
 	} case Load:{
@@ -777,11 +815,13 @@ void UpdateGame() {
 		gameState = Play;
 		break;
 	case RowClear:
+		//Flash the row being cleared
 		if(--rowState%2 == 1) {
 			clearRow(&g, rowCleared);
 		} else {
 			fillRow(&g, rowCleared);
 		}
+		//Keep flashing or clear the row and continue playing
 		if(rowState > 0) {
 			time = standardInterval;
 		} else {
@@ -850,7 +890,7 @@ void UpdateGame() {
 	}
 	nokia_lcd_clear();
 	if(gameState == GameOverFlash) {
-		//Black screen
+		//Flash dark
 		for(short y = 0; y < HEIGHT; y++) {
 			for(short x = 0; x < WIDTH; x++) {
 				drawTile(x, y, 1);
@@ -913,7 +953,7 @@ void UpdateState() {
 		PORTB = 0;
 		break;
 	case Game: UpdateGame();
-		PORTB = score;
+		PORTB = score;					//Display score on the LEDs
 		break;
 	case FinalScore: UpdateFinalScore();
 		PORTB = 0;
@@ -975,6 +1015,8 @@ int main(void)
 	nokia_lcd_clear();
 	TimerSet(TIMER_INTERVAL);
 	TimerOn();
+
+	LCD_init();
 
 	//screenState = Title;
 	SetScreenState(Title);
