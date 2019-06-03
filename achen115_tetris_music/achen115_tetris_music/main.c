@@ -142,18 +142,18 @@ void highScore() {
 
 		G4, F4, G4, F4,
 		F4, Eb4, F4, Eb4,
-		Eb4, Db4, C4, Bb3,
+		Eb4, Db4, C5, Bb4,
 
-		C4, Db4, C4, Bb3,
-		Bb3, A4, Bb3, C4,
+		C5, Db5, C5, Bb4,
+		Bb4, A4, Bb4, C4,
 		Db4, Eb4, Db4, C4,
 
-		C4, Bb3, C4, Db4,
+		C5, Bb4, C5, Db4,
 		Eb4, D4, Eb4, E4,
 		G4, F4, Ab4, F4,
 
-		E4, Eb4, Db4, C4,
-		A4
+		E4, Eb4, Db5, C5,
+		Ab4
 	};
 	const short times[] = {
 		half, half, half,
@@ -190,6 +190,7 @@ void highScore() {
 	noteTime = times[note];	
 }
 void typeA() {
+	//Source: https://www.ninsheetmusic.org/download/pdf/574v
 	const double notes[] = {
 		E4, B3, C4,
 		D4, C4, B3,
