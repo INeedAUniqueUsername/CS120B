@@ -7,6 +7,7 @@
 
 #include <avr/eeprom.h>
 #include <avr/io.h>
+#include "nokia5110.h"
 #include "nokia5110.c"
 #include "timer.h"
 #include "io.c"
@@ -17,8 +18,19 @@
 #define HEIGHT 21
 #define DDR_BUTTONS DDRD
 #define PIN_BUTTONS PIND
-#define PORT_MUSIC PIND
 #define TIMER_INTERVAL 10
+
+char getInput() {
+	/*
+	if(pressed == UART_NO_DATA) {
+		pressed = 0;
+		} else {
+		pressed = pressed & 0xFF;
+	}
+	char ch = (char) pressed;
+	*/
+	return ~PINA & 7;
+}
 
 //Custom character info: https://www.engineersgarage.com/embedded/avr-microcontroller-projects/lcd-interface-atmega16-circuit
 void InitializeChar(char index, char rows[]) {
@@ -389,6 +401,7 @@ void place(Grid *g, Tetra *t) {
 		}
 	}
 }
+/*
 //Sets the Tetromino's tiles in the grid to empty
 void remove(Grid *g, Tetra *t) {
 	FOR_TETRA {
@@ -398,6 +411,7 @@ void remove(Grid *g, Tetra *t) {
 		}
 	}
 }
+*/
 typedef enum ScreenState { Title = 0, Game = 1, FinalScore = 2 } ScreenState;
 ScreenState screenState;
 typedef enum GameState { Init, Load, Play, PlayInterval, RowClear, GameOver, GameOverFlash } GameState;
@@ -408,23 +422,6 @@ unsigned char ADDR_STATE = 0x20;
 unsigned char ADDR_GAME = 0xA0;
 unsigned char ADDR_SCORE = 0xFF;
 unsigned char rnd = 0;
-void SetScreenState(ScreenState next) {
-	screenState = next;
-	switch(next) {
-	case Title:
-		uart_putc(MusicTitle);
-		break;
-	case Game:
-		uart_putc(MusicTypeA);
-		break;
-	case FinalScore:
-		uart_putc(MusicHighScore);
-		break;
-	case GameOver:
-		uart_putc(MusicGameOver)
-		break;
-	}
-}
 short getLength(short sh) {
 	unsigned char length = 1;
 	//Count the number in case it is 0
@@ -455,8 +452,22 @@ void getString(short sh, char* str, short length) {
 	return;
 }
 typedef enum SoundState { MusicTitle = 1, MusicTypeA = 2, MusicGameOver = 3, MusicHighScore = 4 } SoundState;
+void SetScreenState(ScreenState next) {
+	screenState = next;
+	switch(next) {
+		case Title:
+			uart_putc(MusicTitle);
+			break;
+		case Game:
+			uart_putc(MusicTypeA);
+			break;
+		case FinalScore:
+			uart_putc(MusicHighScore);
+			break;
+	}
+}
 void UpdateTitle() {
-	
+
 	nokia_lcd_clear();
 	nokia_lcd_write_string("Tetris!", 1);
 	nokia_lcd_set_cursor(0, 10);
@@ -486,7 +497,8 @@ void UpdateTitle() {
 		LCD_WriteData(rand()%5);
 	}
 
-	char pressed = ~PIN_BUTTONS & 7;
+	//char pressed = ((~PIN_BUTTONS) >> 2) & 7;
+	char pressed = getInput();
 	static char pressed_prev = 0;
 	char justPressed = pressed & ~pressed_prev;
 	switch(pressed) {
@@ -547,7 +559,8 @@ void UpdateFinalScore() {
 	nokia_lcd_render();
 
 
-	char pressed = ~PIN_BUTTONS & 7;
+	//char pressed = ((~PIN_BUTTONS) >> 2) & 7;
+	char pressed = getInput();
 	static char pressed_prev = 7;
 	char justPressed = pressed & ~pressed_prev;
 	switch(justPressed) {
@@ -734,7 +747,8 @@ void UpdateGame() {
 	} case Play: {
 		//remove(&g, &t);			//Remove so that we can move
 
-		char pressed = ~PIN_BUTTONS & 7;
+		//char pressed = ((~PIN_BUTTONS) >> 2) & 7;
+		char pressed = getInput();
 		//char justPressed = pressed & ~pressed_prev;
 		switch(pressed) {
 		case 1:	//Right
@@ -934,15 +948,12 @@ void UpdateGame() {
 void UpdateState() {
 	switch(screenState) {
 	case Title: UpdateTitle();
-		PORT_MUSIC = (MusicTitle) << 3;
 		PORTB = 0;
 		break;
 	case Game: UpdateGame();
-		PORT_MUSIC = (MusicTypeA) << 3;
 		PORTB = score;
 		break;
 	case FinalScore: UpdateFinalScore();
-		PORT_MUSIC = (MusicHighScore) << 3;
 		PORTB = 0;
 		break;
 	default:
@@ -989,9 +1000,13 @@ int main(void)
 	TimerSet(1000);
 	TimerOn();
 	*/
-	DDR_BUTTONS = ~0x07;
-	PIN_BUTTONS = 7;
-	PORT_MUSIC = 0;
+	DDRD = 2;
+	PORTD = 0;
+
+	DDRA = ~7;
+	PORTA = 0;
+	PINA = 7;
+
 	DDRB = -1;
 	PORTB = 0;
 	nokia_lcd_init();
