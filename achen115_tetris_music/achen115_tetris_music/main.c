@@ -7,6 +7,7 @@
 
 #include <avr/io.h>
 #include "io.c"
+#include "uart.c"
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
@@ -155,6 +156,7 @@ void title() {
 	noteTime = times[note];
 }
 void highScore() {
+	//Source: https://www.ninsheetmusic.org/download/pdf/56
 	const double notes[] = {
 		Eb4, F4, G4,
 		Ab4, Bb4, Ab4, G4, 
@@ -403,6 +405,8 @@ int main(void)
 	soundState = Title;
 	noteTime = 0;
 	note = -1;
+
+	uart_init(25); //Source: https://circuitdigest.com/microcontroller-projects/uart-communication-between-two-atmega8-microcontrollers
 	while(1) {
 		switch(soundState) {
 		case Title:
