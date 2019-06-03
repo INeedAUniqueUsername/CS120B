@@ -312,6 +312,24 @@ void typeA() {
 	set_PWM(notes[note]);
 	noteTime = times[note];
 }
+void gameOver() {
+	const double notes[] = {
+		A4, Ab4, A4, Ab4, A4, B4, A4, Ab4
+	};
+	const short times[] = {
+		quarter, quarter, quarter, quarter, 
+		quarter, quarter, quarter, quarter
+	};
+	const short length = 4;
+
+	if(--noteTime > 0)
+		return;
+	if(++note >= length)
+		note = 0;
+
+	set_PWM(notes[note]);
+	noteTime = times[note];
+}
 typedef enum SoundState { Title = 1, TypeA = 2, GameOver = 3, HighScore = 4 } SoundState;
 SoundState soundState = Title;
 void UpdateState() {
@@ -368,7 +386,7 @@ int main(void)
 			typeA();
 			break;
 		case GameOver:
-			set_PWM(0);
+			gameOver();
 			break;
 		case HighScore:
 			highScore();

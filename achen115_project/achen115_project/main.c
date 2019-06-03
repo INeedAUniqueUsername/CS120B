@@ -773,6 +773,7 @@ void UpdateGame() {
 			break;
 		case 7:	//Left + Middle + Right
 			gameState = GameOver;
+			uart_putc(MusicGameOver);
 			return;
 		}
 		pressed_prev = pressed;
@@ -818,6 +819,7 @@ void UpdateGame() {
 				//We landed above the top of the screen
 				//Game over
 				gameState = GameOver;
+				uart_putc(MusicGameOver);
 				rowCleared = 0;
 				//Restore the standard interval
 				standardInterval = STANDARD_INTERVAL;
