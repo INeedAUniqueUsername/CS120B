@@ -126,10 +126,34 @@ const double
 			B4 = 494.88, 
 			C5 = 523.25, 
 			Db5 = 544.37, 
-			D5 = 587.33;
+			D5 = 587.33,
+			Eb5 = 622.25;
 
 short noteTime = 0;
 short note = -1;
+
+void title() {
+	//Source: https://www.ninsheetmusic.org/download/pdf/57
+	const double notes[] = {
+		F4, Gb4, F4, Gb4, Eb4, Eb5, 0,
+		F4, Gb4, F4, Gb4, Eb4, Eb5, 0
+	};
+	const short times[] = {
+		quarter, quarter, quarter, quarter, quarter, half, quarter,
+		quarter, quarter, quarter, quarter, quarter, half, whole
+	};
+	const short length = 14;
+
+	if(--noteTime > 0)
+		return;
+	//Does not loop
+	if(note == length-1)
+		return;
+	else if(++note >= length)
+		note = 0;
+	set_PWM(notes[note]);
+	noteTime = times[note];
+}
 void highScore() {
 	const double notes[] = {
 		Eb4, F4, G4,
@@ -376,12 +400,13 @@ int main(void)
 	PWM_on();
 	TimerSet(1);
 	TimerOn();
+	soundState = Title;
 	noteTime = 0;
 	note = -1;
 	while(1) {
 		switch(soundState) {
 		case Title:
-			set_PWM(0);
+			title();
 			break;
 		case TypeA:
 			typeA();
